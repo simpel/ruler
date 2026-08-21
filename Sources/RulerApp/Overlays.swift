@@ -1,0 +1,181 @@
+import AppKit
+
+/// Shared look for the overlay pieces.
+enum Palette {
+    static let live = NSColor.systemRed          // cursor line / live measurement
+    static let guideLine = NSColor.systemTeal    // fixed guides
+
+    static func hud() -> NSColor { NSColor(calibratedWhite: 0.08, alpha: 0.88) }
+}
+
+/// A click-through hairline window spanning a whole screen. Used for the
+/// crosshair that follows the pointer; moving a window is far cheaper than
+/// redrawing a full-screen view 60 times a second.
+final class HairlineWindow: NSPanel {
+
+    private let orientation: RulerAxis
+
+    init(orientation: RulerAxis) {
+        self.orientation = orientation
+        super.init(contentRect: NSRect(x: 0, y: 0, width: 10, height: 1),
+                   styleMask: [.borderless, .nonactivatingPanel],
+                   backing: .buffered,
+                   defer: false)
+        isFloatingPanel = true
+        hidesOnDeactivate = false
+        ignoresMouseEvents = true
+        isOpaque = false
+        hasShadow = false
+        isReleasedWhenClosed = false
+        backgroundColor = Palette.live.withAlphaComponent(0.55)
+        level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue - 2)
+        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle, .stationary]
+    }
+
+    override var canBecomeKey: Bool { false }
+
+    /// Positions the hairline through `point` (global coordinates).
+    func follow(_ point: NSPoint, on screen: NSScreen) {
+        let f = screen.frame
+        let rect: NSRect
+        switch orientation {
+        case .horizontal:   // a horizontal line, moves in y
+            rect = NSRect(x: f.minX, y: point.y.rounded() - 0.5, width: f.width, height: 1)
+        case .vertical:     // a vertical line, moves in x
+            rect = NSRect(x: point.x.rounded() - 0.5, y: f.minY, width: 1, height: f.height)
+        }
+        if frame != rect { setFrame(rect, display: false) }
+    }
+}
+
+/// Click-through overlay that draws the shift-drag measurement and the
+/// pointer coordinate readout. Its window is kept just big enough to hold the
+/// measurement plus its labels, so redraws stay cheap.
+final class MeasureOverlayWindow: NSPanel {
+
+    let measureView = MeasureView()
+
+    init() {
+        super.init(contentRect: NSRect(x: 0, y: 0, width: 200, height: 200),
+                   styleMask: [.borderless, .nonactivatingPanel],
+                   backing: .buffered,
+                   defer: false)
+        isFloatingPanel = true
+        hidesOnDeactivate = false
+        ignoresMouseEvents = true
+        isOpaque = false
+        backgroundColor = .clear
+        hasShadow = false
+        isReleasedWhenClosed = false
+        contentView = measureView
+        level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 1)
+        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle, .stationary]
+    }
+
+    override var canBecomeKey: Bool { false }
+
+    /// `anchor` is nil while the gesture is only armed (no button pressed yet).
+    func show(anchor: NSPoint?, current: NSPoint, scale: CGFloat, screen: NSScreen) {
+        let padding: CGFloat = 120
+        var box = NSRect(origin: current, size: .zero)
+        if let a = anchor {
+            box = NSRect(x: min(a.x, current.x), y: min(a.y, current.y),
+                         width: abs(a.x - current.x), height: abs(a.y - current.y))
+        }
+        var frame = box.insetBy(dx: -padding, dy: -padding)
+        frame = NSRect(x: frame.origin.x.rounded(), y: frame.origin.y.rounded(),
+                       width: frame.width.rounded(), height: frame.height.rounded())
+
+        if frame != self.frame { setFrame(frame, display: false) }
+
+        measureView.anchor = anchor.map { NSPoint(x: $0.x - frame.minX, y: $0.y - frame.minY) }
+        measureView.current = NSPoint(x: current.x - frame.minX, y: current.y - frame.minY)
+        measureView.scale = scale
+        measureView.screenOrigin = NSPoint(x: screen.frame.minX - frame.minX,
+                                           y: screen.frame.maxY - frame.minY)
+        measureView.needsDisplay = true
+
+        if !isVisible { orderFrontRegardless() }
+    }
+
+    func hide() {
+        if isVisible { orderOut(nil) }
+    }
+}
+
+final class MeasureView: NSView {
+
+    var anchor: NSPoint?
+    var current: NSPoint = .zero
+    var scale: CGFloat = 1
+    /// Top-left corner of the pointer's screen, in this view's coordinates.
+    var screenOrigin: NSPoint = .zero
+
+    override var isOpaque: Bool { false }
+
+    override func draw(_ dirtyRect: NSRect) {
+        if let a = anchor {
+            drawMeasurement(from: a, to: current)
+        } else {
+            let x = (current.x - screenOrigin.x) * scale
+            let y = (screenOrigin.y - current.y) * scale
+            drawBadge(["X \(Int(x.rounded()))   Y \(Int(y.rounded()))"], near: current)
+        }
+    }
+
+    private func drawMeasurement(from a: NSPoint, to b: NSPoint) {
+        let dx = abs(b.x - a.x) * scale
+        let dy = abs(b.y - a.y) * scale
+        let dist = (hypot(b.x - a.x, b.y - a.y)) * scale
+
+        // Bounding box of the drag.
+        let box = NSRect(x: min(a.x, b.x), y: min(a.y, b.y),
+                         width: abs(a.x - b.x), height: abs(a.y - b.y))
+        let boxPath = NSBezierPath(rect: box)
+        boxPath.lineWidth = 1
+        boxPath.setLineDash([4, 3], count: 2, phase: 0)
+        Palette.live.withAlphaComponent(0.55).setStroke()
+        boxPath.stroke()
+
+        Palette.live.withAlphaComponent(0.10).setFill()
+        NSBezierPath(rect: box).fill()
+
+        // The measured line itself.
+        let line = NSBezierPath()
+        line.lineWidth = 1.5
+        line.move(to: a)
+        line.line(to: b)
+        Palette.live.setStroke()
+        line.stroke()
+
+        for p in [a, b] {
+            let dot = NSRect(x: p.x - 2.5, y: p.y - 2.5, width: 5, height: 5)
+            Palette.live.setFill()
+            NSBezierPath(ovalIn: dot).fill()
+        }
+
+        var lines = ["\(Int(dist.rounded())) px"]
+        if dx > 0.5 || dy > 0.5 {
+            lines.append("W \(Int(dx.rounded()))   H \(Int(dy.rounded()))")
+        }
+        drawBadge(lines, near: b)
+    }
+
+    private func drawBadge(_ lines: [String], near point: NSPoint) {
+        let text = NSAttributedString(string: lines.joined(separator: "\n"), attributes: [
+            .font: NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .semibold),
+            .foregroundColor: NSColor.white,
+        ])
+        let size = text.size()
+        let padX: CGFloat = 6, padY: CGFloat = 4
+        var rect = NSRect(x: point.x + 14, y: point.y + 14,
+                          width: size.width + padX * 2, height: size.height + padY * 2)
+        rect.origin.x = min(max(rect.origin.x, bounds.minX + 2), bounds.maxX - rect.width - 2)
+        rect.origin.y = min(max(rect.origin.y, bounds.minY + 2), bounds.maxY - rect.height - 2)
+
+        Palette.hud().setFill()
+        NSBezierPath(roundedRect: rect, xRadius: 4, yRadius: 4).fill()
+        text.draw(in: NSRect(x: rect.minX + padX, y: rect.minY + padY,
+                             width: size.width, height: size.height))
+    }
+}
