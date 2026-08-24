@@ -75,7 +75,7 @@ func drawIcon(size S: CGFloat) {
     face.appendRoundedRect(horizontal, xRadius: r, yRadius: r)
     face.appendRoundedRect(vertical, xRadius: r, yRadius: r)
     face.windingRule = .nonZero
-    color(0xF5F2E9).setFill()
+    color(0xEAF2FF).setFill()   // Blueprint White, matching Palette.ink
     face.fill()
 
     // Ticks stand on the inner edges of the L, like the real rulers.
@@ -109,12 +109,12 @@ func drawIcon(size S: CGFloat) {
     cursor.lineWidth = max(1, S * 0.017)
     cursor.move(to: NSPoint(x: cursorX, y: horizontal.maxY))
     cursor.line(to: NSPoint(x: cursorX, y: w(m + 0.06)))
-    color(0xFF3B30).setStroke()
+    color(0xFF5A36).setStroke()   // Redline, matching Palette.live
     cursor.stroke()
 
     if detailed {
         let dot = S * 0.028
-        color(0xFF3B30).setFill()
+        color(0xFF5A36).setFill()
         NSBezierPath(ovalIn: NSRect(x: cursorX - dot / 2, y: w(m + 0.06) - dot / 2,
                                     width: dot, height: dot)).fill()
     }
