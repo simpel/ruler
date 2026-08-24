@@ -105,7 +105,9 @@ Two kinds of marklines:
   it (Photoshop style), or right-click a ruler for *Add Cross Guide Here* (a
   guide crossing the ruler at the clicked value), or use the **Guides** menu to
   add one at the pointer. Each guide is amber, labelled with its position on the
-  matching ruler, and can be dragged to a new position at any time.
+  matching ruler, and can be dragged to a new position at any time. Hover or
+  drag a guide to see its distance to every other guide on that edge, in
+  redline badges along the screen edge.
   Double-click a guide to remove it; right-click it for remove/clear all.
   Guides are remembered between launches.
 

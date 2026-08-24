@@ -86,6 +86,7 @@ final class HelpWindowController {
             ("⌥-drag off a ruler", "pull out a fixed amber guide, running parallel to that ruler"),
             ("Right-click a ruler", "Add Cross Guide Here — a guide crossing it at the clicked value"),
             ("Drag a guide", "move it; its badge shows its position on the matching ruler"),
+            ("Hover or drag a guide", "shows its distance to every other guide on that edge, in redline badges"),
             ("Double-click a guide", "remove it — or right-click it for remove / clear all"),
             ("Guides menu", "add a guide at the pointer, or clear every guide"),
         ]))

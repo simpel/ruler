@@ -94,8 +94,15 @@ final class GuideView: NSView {
         trackingArea = area
     }
 
-    override func mouseEntered(with event: NSEvent) { hovering = true; needsDisplay = true }
-    override func mouseExited(with event: NSEvent) { hovering = false; needsDisplay = true }
+    override func mouseEntered(with event: NSEvent) {
+        hovering = true; needsDisplay = true
+        if let owner { GuideManager.shared.hover(owner) }
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        hovering = false; needsDisplay = true
+        if let owner { GuideManager.shared.endHover(owner) }
+    }
 
     override func resetCursorRects() {
         super.resetCursorRects()
@@ -164,6 +171,7 @@ final class GuideView: NSView {
     override func mouseDragged(with event: NSEvent) {
         guard let owner else { return }
         owner.move(to: NSEvent.mouseLocation)
+        GuideManager.shared.hover(owner)
     }
 
     override func mouseUp(with event: NSEvent) {
@@ -190,12 +198,110 @@ final class GuideView: NSView {
     }
 }
 
+/// Shows the distance from a hovered (or dragged) guide to every other guide
+/// of the same orientation on its screen, as redline badges along the screen
+/// edge that guide's own position label already sits on — the top edge for
+/// vertical guides, the left edge for horizontal ones.
+final class GuideDistanceOverlay: NSPanel {
+
+    private let distanceView = GuideDistanceView()
+
+    init() {
+        super.init(contentRect: .zero,
+                   styleMask: [.borderless, .nonactivatingPanel],
+                   backing: .buffered,
+                   defer: false)
+        isFloatingPanel = true
+        hidesOnDeactivate = false
+        ignoresMouseEvents = true
+        isOpaque = false
+        backgroundColor = .clear
+        hasShadow = false
+        isReleasedWhenClosed = false
+        contentView = distanceView
+        level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue - 1)
+        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle, .stationary]
+    }
+
+    override var canBecomeKey: Bool { false }
+
+    func show(hovered: GuideWindow, siblings: [GuideWindow], on screen: NSScreen) {
+        if frame != screen.frame { setFrame(screen.frame, display: false) }
+        distanceView.configure(hovered: hovered, siblings: siblings, screen: screen)
+        if !isVisible { orderFrontRegardless() }
+    }
+
+    func hide() {
+        if isVisible { orderOut(nil) }
+    }
+}
+
+final class GuideDistanceView: NSView {
+
+    private struct Badge { let text: String; let anchor: NSPoint }
+
+    private var badges: [Badge] = []
+    private var orientation: RulerAxis = .vertical
+
+    override var isOpaque: Bool { false }
+
+    /// `anchor` marks where the label band sits along the screen edge; the
+    /// badge itself is drawn hanging off it, matching how a guide's own
+    /// position label is placed relative to its window's bounds.
+    func configure(hovered: GuideWindow, siblings: [GuideWindow], screen: NSScreen) {
+        orientation = hovered.orientation
+        let scale = Settings.shared.devicePixels ? screen.backingScaleFactor : 1.0
+        let edgeInset: CGFloat = 10
+        let menuBarInset = screen.frame.maxY - screen.visibleFrame.maxY
+        let origin = screen.frame.origin
+
+        badges = siblings.map { sibling in
+            let distance = abs(hovered.position - sibling.position) * scale
+            let mid = (hovered.position + sibling.position) / 2
+            let anchor: NSPoint
+            switch orientation {
+            case .vertical:
+                anchor = NSPoint(x: mid - origin.x, y: screen.frame.height - menuBarInset - edgeInset)
+            case .horizontal:
+                anchor = NSPoint(x: edgeInset, y: mid - origin.y)
+            }
+            return Badge(text: "\(Int(distance.rounded()))", anchor: anchor)
+        }
+        needsDisplay = true
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        for badge in badges { drawBadge(badge) }
+    }
+
+    private func drawBadge(_ badge: Badge) {
+        let text = NSAttributedString(string: badge.text, attributes: [
+            .font: NSFont.monospacedDigitSystemFont(ofSize: 9, weight: .semibold),
+            .foregroundColor: NSColor.white,
+        ])
+        let size = text.size()
+        let padX: CGFloat = 4, padY: CGFloat = 1.5
+        var rect = NSRect(x: 0, y: 0, width: size.width + padX * 2, height: size.height + padY * 2)
+        switch orientation {
+        case .vertical:
+            rect.origin = NSPoint(x: badge.anchor.x - rect.width / 2, y: badge.anchor.y - rect.height)
+        case .horizontal:
+            rect.origin = NSPoint(x: badge.anchor.x, y: badge.anchor.y - rect.height / 2)
+        }
+        Palette.live.withAlphaComponent(0.95).setFill()
+        NSBezierPath(roundedRect: rect, xRadius: 3, yRadius: 3).fill()
+        text.draw(at: NSPoint(x: rect.minX + padX, y: rect.minY + padY))
+    }
+}
+
 /// Creates, stores and restores the fixed guides.
 final class GuideManager {
 
     static let shared = GuideManager()
 
     private(set) var guides: [GuideWindow] = []
+    private(set) var hoveredGuide: GuideWindow?
+    private let distanceOverlay = GuideDistanceOverlay()
 
     /// Supplied by RulerController: turns a guide into the number shown on it.
     var labelProvider: ((GuideWindow) -> String?)?
@@ -220,12 +326,15 @@ final class GuideManager {
     func remove(_ guide: GuideWindow) {
         guide.orderOut(nil)
         guides.removeAll { $0 === guide }
+        endHover(guide)
         save()
     }
 
     func clear() {
         guides.forEach { $0.orderOut(nil) }
         guides.removeAll()
+        hoveredGuide = nil
+        distanceOverlay.hide()
         save()
     }
 
@@ -235,10 +344,40 @@ final class GuideManager {
             guide.ignoresMouseEvents = Settings.shared.clickThrough
             guide.refreshLabel()
         }
+        distanceOverlay.alphaValue = CGFloat(Settings.shared.opacity)
+        updateDistanceOverlay()
     }
 
     func relayout() {
         guides.forEach { $0.layout() }
+        updateDistanceOverlay()
+    }
+
+    // MARK: - Hover distances
+
+    /// The pointer entered (or is dragging) this guide: show its distance to
+    /// every other guide sharing its orientation and screen.
+    func hover(_ guide: GuideWindow) {
+        hoveredGuide = guide
+        updateDistanceOverlay()
+    }
+
+    /// The pointer left this guide. A no-op if some other guide is now hovered.
+    func endHover(_ guide: GuideWindow) {
+        guard hoveredGuide === guide else { return }
+        hoveredGuide = nil
+        distanceOverlay.hide()
+    }
+
+    private func updateDistanceOverlay() {
+        guard let hovered = hoveredGuide else { distanceOverlay.hide(); return }
+        let screen = NSScreen.screens.first { $0.frame.contains(hovered.anchor) }
+            ?? NSScreen.main ?? NSScreen.screens[0]
+        let siblings = guides.filter {
+            $0 !== hovered && $0.orientation == hovered.orientation && screen.frame.contains($0.anchor)
+        }
+        guard !siblings.isEmpty else { distanceOverlay.hide(); return }
+        distanceOverlay.show(hovered: hovered, siblings: siblings, on: screen)
     }
 
     func refreshLabels() {
