@@ -62,6 +62,47 @@
   .guide-badge rect { fill: var(--teal); }
   .hud rect { fill: rgba(10,12,14,.9); }
 
+  /* The illustration plays the gesture: the pointer drags from one corner to
+     the other, the rulers read it out, then it resets. Static markup is the
+     resting state, so with motion turned off the scene just sits at the end. */
+  @media (prefers-reduced-motion: no-preference) {
+    .measure-line { stroke-dasharray: 247; animation: draw 9s ease-in-out infinite; }
+    .measure-box { transform-box: fill-box; transform-origin: left bottom;
+                  animation: grow 9s ease-in-out infinite; }
+    .measure { animation: fade 9s ease-in-out infinite; }
+    .dot.end, .hud, .readout { animation: settle 9s ease-in-out infinite; }
+    .cx { animation: sweepX 9s ease-in-out infinite; }
+    .cy { animation: sweepY 9s ease-in-out infinite; }
+  }
+  @keyframes sweepX {
+    0%, 8% { transform: translateX(-210px); }
+    42%, 94% { transform: translateX(0); }
+    100% { transform: translateX(-210px); }
+  }
+  @keyframes sweepY {
+    0%, 8% { transform: translateY(130px); }
+    42%, 94% { transform: translateY(0); }
+    100% { transform: translateY(130px); }
+  }
+  @keyframes draw {
+    0%, 8% { stroke-dashoffset: 247; }
+    42%, 100% { stroke-dashoffset: 0; }
+  }
+  @keyframes grow {
+    0%, 8% { transform: scale(0, 0); }
+    42%, 100% { transform: scale(1, 1); }
+  }
+  @keyframes fade {
+    0%, 7% { opacity: 0; }
+    10%, 86% { opacity: 1; }
+    95%, 100% { opacity: 0; }
+  }
+  @keyframes settle {
+    0%, 42% { opacity: 0; }
+    50%, 86% { opacity: 1; }
+    95%, 100% { opacity: 0; }
+  }
+
   h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .09em;
        color: var(--muted); margin: 56px 0 14px; }
   .card { background: var(--panel); border: 1px solid var(--line);
@@ -111,6 +152,47 @@
     <p class="meta">Free · Universal · macOS 13 or later</p>
   </header>
 
+  <svg class="shot" viewBox="0 0 720 430" role="img" aria-label="Two pixel rulers overlaying a page, with a crosshair, a measurement and a guide">
+  <rect x="0.5" y="0.5" width="719" height="429" rx="14" class="canvas"/>
+  <g class="skeleton">
+    <rect x="120" y="120" width="330" height="14" rx="7"/>
+    <rect x="120" y="150" width="420" height="14" rx="7"/>
+    <rect x="120" y="180" width="250" height="14" rx="7"/>
+    <rect x="120" y="232" width="470" height="80" rx="10"/>
+    <rect x="120" y="330" width="200" height="14" rx="7"/>
+  </g>
+
+  <!-- fixed guide -->
+  <line x1="0" y1="205.5" x2="720" y2="205.5" class="guide"/>
+  <g class="badge guide-badge"><rect x="70" y="196" width="30" height="19" rx="4"/><text x="85" y="209">139</text></g>
+
+  <!-- measurement: a drag from (180,300) to (390,170) -->
+  <g class="measure">
+    <rect x="180" y="170" width="210" height="130" class="measure-box" vector-effect="non-scaling-stroke"/>
+    <line x1="180" y1="300" x2="390" y2="170" class="measure-line"/>
+    <circle cx="180" cy="300" r="3.5" class="dot"/>
+    <circle cx="390" cy="170" r="3.5" class="dot end"/>
+  </g>
+  <g class="badge hud"><rect x="398" y="146" width="104" height="34" rx="6"/>
+    <text x="410" y="160" class="l">247 px</text><text x="410" y="173" class="l">W 210  H 130</text></g>
+
+  <!-- crosshair -->
+  <line x1="390.5" y1="0" x2="390.5" y2="430" class="cross cx"/>
+  <line x1="0" y1="170.5" x2="720" y2="170.5" class="cross cy"/>
+
+  <!-- rulers -->
+  <rect x="56" y="40" width="608" height="26" rx="5" class="ruler"/>
+  <rect x="30" y="66" width="26" height="330" rx="5" class="ruler"/>
+  <g class="ticks"><line x1="56.5" y1="66" x2="56.5" y2="55"/><line x1="66.5" y1="66" x2="66.5" y2="62"/><line x1="76.5" y1="66" x2="76.5" y2="62"/><line x1="86.5" y1="66" x2="86.5" y2="62"/><line x1="96.5" y1="66" x2="96.5" y2="62"/><line x1="106.5" y1="66" x2="106.5" y2="59"/><line x1="116.5" y1="66" x2="116.5" y2="62"/><line x1="126.5" y1="66" x2="126.5" y2="62"/><line x1="136.5" y1="66" x2="136.5" y2="62"/><line x1="146.5" y1="66" x2="146.5" y2="62"/><line x1="156.5" y1="66" x2="156.5" y2="55"/><line x1="166.5" y1="66" x2="166.5" y2="62"/><line x1="176.5" y1="66" x2="176.5" y2="62"/><line x1="186.5" y1="66" x2="186.5" y2="62"/><line x1="196.5" y1="66" x2="196.5" y2="62"/><line x1="206.5" y1="66" x2="206.5" y2="59"/><line x1="216.5" y1="66" x2="216.5" y2="62"/><line x1="226.5" y1="66" x2="226.5" y2="62"/><line x1="236.5" y1="66" x2="236.5" y2="62"/><line x1="246.5" y1="66" x2="246.5" y2="62"/><line x1="256.5" y1="66" x2="256.5" y2="55"/><line x1="266.5" y1="66" x2="266.5" y2="62"/><line x1="276.5" y1="66" x2="276.5" y2="62"/><line x1="286.5" y1="66" x2="286.5" y2="62"/><line x1="296.5" y1="66" x2="296.5" y2="62"/><line x1="306.5" y1="66" x2="306.5" y2="59"/><line x1="316.5" y1="66" x2="316.5" y2="62"/><line x1="326.5" y1="66" x2="326.5" y2="62"/><line x1="336.5" y1="66" x2="336.5" y2="62"/><line x1="346.5" y1="66" x2="346.5" y2="62"/><line x1="356.5" y1="66" x2="356.5" y2="55"/><line x1="366.5" y1="66" x2="366.5" y2="62"/><line x1="376.5" y1="66" x2="376.5" y2="62"/><line x1="386.5" y1="66" x2="386.5" y2="62"/><line x1="396.5" y1="66" x2="396.5" y2="62"/><line x1="406.5" y1="66" x2="406.5" y2="59"/><line x1="416.5" y1="66" x2="416.5" y2="62"/><line x1="426.5" y1="66" x2="426.5" y2="62"/><line x1="436.5" y1="66" x2="436.5" y2="62"/><line x1="446.5" y1="66" x2="446.5" y2="62"/><line x1="456.5" y1="66" x2="456.5" y2="55"/><line x1="466.5" y1="66" x2="466.5" y2="62"/><line x1="476.5" y1="66" x2="476.5" y2="62"/><line x1="486.5" y1="66" x2="486.5" y2="62"/><line x1="496.5" y1="66" x2="496.5" y2="62"/><line x1="506.5" y1="66" x2="506.5" y2="59"/><line x1="516.5" y1="66" x2="516.5" y2="62"/><line x1="526.5" y1="66" x2="526.5" y2="62"/><line x1="536.5" y1="66" x2="536.5" y2="62"/><line x1="546.5" y1="66" x2="546.5" y2="62"/><line x1="556.5" y1="66" x2="556.5" y2="55"/><line x1="566.5" y1="66" x2="566.5" y2="62"/><line x1="576.5" y1="66" x2="576.5" y2="62"/><line x1="586.5" y1="66" x2="586.5" y2="62"/><line x1="596.5" y1="66" x2="596.5" y2="62"/><line x1="606.5" y1="66" x2="606.5" y2="59"/><line x1="616.5" y1="66" x2="616.5" y2="62"/><line x1="626.5" y1="66" x2="626.5" y2="62"/><line x1="636.5" y1="66" x2="636.5" y2="62"/><line x1="646.5" y1="66" x2="646.5" y2="62"/><line x1="656.5" y1="66" x2="656.5" y2="55"/><line x1="56" y1="66.5" x2="45" y2="66.5"/><line x1="56" y1="76.5" x2="52" y2="76.5"/><line x1="56" y1="86.5" x2="52" y2="86.5"/><line x1="56" y1="96.5" x2="52" y2="96.5"/><line x1="56" y1="106.5" x2="52" y2="106.5"/><line x1="56" y1="116.5" x2="49" y2="116.5"/><line x1="56" y1="126.5" x2="52" y2="126.5"/><line x1="56" y1="136.5" x2="52" y2="136.5"/><line x1="56" y1="146.5" x2="52" y2="146.5"/><line x1="56" y1="156.5" x2="52" y2="156.5"/><line x1="56" y1="166.5" x2="45" y2="166.5"/><line x1="56" y1="176.5" x2="52" y2="176.5"/><line x1="56" y1="186.5" x2="52" y2="186.5"/><line x1="56" y1="196.5" x2="52" y2="196.5"/><line x1="56" y1="206.5" x2="52" y2="206.5"/><line x1="56" y1="216.5" x2="49" y2="216.5"/><line x1="56" y1="226.5" x2="52" y2="226.5"/><line x1="56" y1="236.5" x2="52" y2="236.5"/><line x1="56" y1="246.5" x2="52" y2="246.5"/><line x1="56" y1="256.5" x2="52" y2="256.5"/><line x1="56" y1="266.5" x2="45" y2="266.5"/><line x1="56" y1="276.5" x2="52" y2="276.5"/><line x1="56" y1="286.5" x2="52" y2="286.5"/><line x1="56" y1="296.5" x2="52" y2="296.5"/><line x1="56" y1="306.5" x2="52" y2="306.5"/><line x1="56" y1="316.5" x2="49" y2="316.5"/><line x1="56" y1="326.5" x2="52" y2="326.5"/><line x1="56" y1="336.5" x2="52" y2="336.5"/><line x1="56" y1="346.5" x2="52" y2="346.5"/><line x1="56" y1="356.5" x2="52" y2="356.5"/><line x1="56" y1="366.5" x2="45" y2="366.5"/><line x1="56" y1="376.5" x2="52" y2="376.5"/><line x1="56" y1="386.5" x2="52" y2="386.5"/><line x1="56" y1="396.5" x2="52" y2="396.5"/></g>
+  <g class="tick-labels"><text x="160" y="53">100</text><text x="260" y="53">200</text><text x="360" y="53">300</text><text x="460" y="53">400</text><text x="560" y="53">500</text><text x="32" y="169" class="v">100</text><text x="32" y="269" class="v">200</text></g>
+
+  <!-- live readouts on both rulers -->
+  <line x1="390.5" y1="40" x2="390.5" y2="66" class="live cx"/>
+  <line x1="30" y1="170.5" x2="56" y2="170.5" class="live cy"/>
+  <g class="badge live-badge readout"><rect x="352" y="43" width="34" height="19" rx="4"/><text x="369" y="57">334</text></g>
+  <g class="badge live-badge readout"><rect x="16" y="161" width="34" height="19" rx="4"/><text x="33" y="174">104</text></g>
+</svg>
+
   <h2>Install — two steps</h2>
   <div class="card">
     <div class="step">
@@ -142,43 +224,6 @@
   </div>
   <p class="outro">That’s it — Ruler appears in your menu bar. There’s no Dock icon.</p>
 
-  <svg class="shot" viewBox="0 0 720 430" role="img" aria-label="Two pixel rulers overlaying a page, with a crosshair, a measurement and a guide">
-  <rect x="0.5" y="0.5" width="719" height="429" rx="14" class="canvas"/>
-  <g class="skeleton">
-    <rect x="120" y="120" width="330" height="14" rx="7"/>
-    <rect x="120" y="150" width="420" height="14" rx="7"/>
-    <rect x="120" y="180" width="250" height="14" rx="7"/>
-    <rect x="120" y="232" width="470" height="80" rx="10"/>
-    <rect x="120" y="330" width="200" height="14" rx="7"/>
-  </g>
-
-  <!-- fixed guide -->
-  <line x1="0" y1="205.5" x2="720" y2="205.5" class="guide"/>
-  <g class="badge guide-badge"><rect x="70" y="196" width="30" height="19" rx="4"/><text x="85" y="209">139</text></g>
-
-  <!-- measurement -->
-  <rect x="180" y="120" width="210" height="130" class="measure-box"/>
-  <line x1="180" y1="250" x2="390" y2="120" class="measure-line"/>
-  <circle cx="180" cy="250" r="3.5" class="dot"/><circle cx="390" cy="120" r="3.5" class="dot"/>
-  <g class="badge hud"><rect x="398" y="96" width="104" height="34" rx="6"/>
-    <text x="410" y="110" class="l">247 px</text><text x="410" y="123" class="l">W 210  H 130</text></g>
-
-  <!-- crosshair -->
-  <line x1="390.5" y1="0" x2="390.5" y2="430" class="cross"/>
-  <line x1="0" y1="300.5" x2="720" y2="300.5" class="cross"/>
-
-  <!-- rulers -->
-  <rect x="56" y="40" width="608" height="26" rx="5" class="ruler"/>
-  <rect x="30" y="66" width="26" height="330" rx="5" class="ruler"/>
-  <g class="ticks"><line x1="56.5" y1="66" x2="56.5" y2="55"/><line x1="66.5" y1="66" x2="66.5" y2="62"/><line x1="76.5" y1="66" x2="76.5" y2="62"/><line x1="86.5" y1="66" x2="86.5" y2="62"/><line x1="96.5" y1="66" x2="96.5" y2="62"/><line x1="106.5" y1="66" x2="106.5" y2="59"/><line x1="116.5" y1="66" x2="116.5" y2="62"/><line x1="126.5" y1="66" x2="126.5" y2="62"/><line x1="136.5" y1="66" x2="136.5" y2="62"/><line x1="146.5" y1="66" x2="146.5" y2="62"/><line x1="156.5" y1="66" x2="156.5" y2="55"/><line x1="166.5" y1="66" x2="166.5" y2="62"/><line x1="176.5" y1="66" x2="176.5" y2="62"/><line x1="186.5" y1="66" x2="186.5" y2="62"/><line x1="196.5" y1="66" x2="196.5" y2="62"/><line x1="206.5" y1="66" x2="206.5" y2="59"/><line x1="216.5" y1="66" x2="216.5" y2="62"/><line x1="226.5" y1="66" x2="226.5" y2="62"/><line x1="236.5" y1="66" x2="236.5" y2="62"/><line x1="246.5" y1="66" x2="246.5" y2="62"/><line x1="256.5" y1="66" x2="256.5" y2="55"/><line x1="266.5" y1="66" x2="266.5" y2="62"/><line x1="276.5" y1="66" x2="276.5" y2="62"/><line x1="286.5" y1="66" x2="286.5" y2="62"/><line x1="296.5" y1="66" x2="296.5" y2="62"/><line x1="306.5" y1="66" x2="306.5" y2="59"/><line x1="316.5" y1="66" x2="316.5" y2="62"/><line x1="326.5" y1="66" x2="326.5" y2="62"/><line x1="336.5" y1="66" x2="336.5" y2="62"/><line x1="346.5" y1="66" x2="346.5" y2="62"/><line x1="356.5" y1="66" x2="356.5" y2="55"/><line x1="366.5" y1="66" x2="366.5" y2="62"/><line x1="376.5" y1="66" x2="376.5" y2="62"/><line x1="386.5" y1="66" x2="386.5" y2="62"/><line x1="396.5" y1="66" x2="396.5" y2="62"/><line x1="406.5" y1="66" x2="406.5" y2="59"/><line x1="416.5" y1="66" x2="416.5" y2="62"/><line x1="426.5" y1="66" x2="426.5" y2="62"/><line x1="436.5" y1="66" x2="436.5" y2="62"/><line x1="446.5" y1="66" x2="446.5" y2="62"/><line x1="456.5" y1="66" x2="456.5" y2="55"/><line x1="466.5" y1="66" x2="466.5" y2="62"/><line x1="476.5" y1="66" x2="476.5" y2="62"/><line x1="486.5" y1="66" x2="486.5" y2="62"/><line x1="496.5" y1="66" x2="496.5" y2="62"/><line x1="506.5" y1="66" x2="506.5" y2="59"/><line x1="516.5" y1="66" x2="516.5" y2="62"/><line x1="526.5" y1="66" x2="526.5" y2="62"/><line x1="536.5" y1="66" x2="536.5" y2="62"/><line x1="546.5" y1="66" x2="546.5" y2="62"/><line x1="556.5" y1="66" x2="556.5" y2="55"/><line x1="566.5" y1="66" x2="566.5" y2="62"/><line x1="576.5" y1="66" x2="576.5" y2="62"/><line x1="586.5" y1="66" x2="586.5" y2="62"/><line x1="596.5" y1="66" x2="596.5" y2="62"/><line x1="606.5" y1="66" x2="606.5" y2="59"/><line x1="616.5" y1="66" x2="616.5" y2="62"/><line x1="626.5" y1="66" x2="626.5" y2="62"/><line x1="636.5" y1="66" x2="636.5" y2="62"/><line x1="646.5" y1="66" x2="646.5" y2="62"/><line x1="656.5" y1="66" x2="656.5" y2="55"/><line x1="56" y1="66.5" x2="45" y2="66.5"/><line x1="56" y1="76.5" x2="52" y2="76.5"/><line x1="56" y1="86.5" x2="52" y2="86.5"/><line x1="56" y1="96.5" x2="52" y2="96.5"/><line x1="56" y1="106.5" x2="52" y2="106.5"/><line x1="56" y1="116.5" x2="49" y2="116.5"/><line x1="56" y1="126.5" x2="52" y2="126.5"/><line x1="56" y1="136.5" x2="52" y2="136.5"/><line x1="56" y1="146.5" x2="52" y2="146.5"/><line x1="56" y1="156.5" x2="52" y2="156.5"/><line x1="56" y1="166.5" x2="45" y2="166.5"/><line x1="56" y1="176.5" x2="52" y2="176.5"/><line x1="56" y1="186.5" x2="52" y2="186.5"/><line x1="56" y1="196.5" x2="52" y2="196.5"/><line x1="56" y1="206.5" x2="52" y2="206.5"/><line x1="56" y1="216.5" x2="49" y2="216.5"/><line x1="56" y1="226.5" x2="52" y2="226.5"/><line x1="56" y1="236.5" x2="52" y2="236.5"/><line x1="56" y1="246.5" x2="52" y2="246.5"/><line x1="56" y1="256.5" x2="52" y2="256.5"/><line x1="56" y1="266.5" x2="45" y2="266.5"/><line x1="56" y1="276.5" x2="52" y2="276.5"/><line x1="56" y1="286.5" x2="52" y2="286.5"/><line x1="56" y1="296.5" x2="52" y2="296.5"/><line x1="56" y1="306.5" x2="52" y2="306.5"/><line x1="56" y1="316.5" x2="49" y2="316.5"/><line x1="56" y1="326.5" x2="52" y2="326.5"/><line x1="56" y1="336.5" x2="52" y2="336.5"/><line x1="56" y1="346.5" x2="52" y2="346.5"/><line x1="56" y1="356.5" x2="52" y2="356.5"/><line x1="56" y1="366.5" x2="45" y2="366.5"/><line x1="56" y1="376.5" x2="52" y2="376.5"/><line x1="56" y1="386.5" x2="52" y2="386.5"/><line x1="56" y1="396.5" x2="52" y2="396.5"/></g>
-  <g class="tick-labels"><text x="160" y="53">100</text><text x="260" y="53">200</text><text x="360" y="53">300</text><text x="460" y="53">400</text><text x="560" y="53">500</text><text x="32" y="169" class="v">100</text><text x="32" y="269" class="v">200</text></g>
-
-  <!-- live readouts on both rulers -->
-  <line x1="390.5" y1="40" x2="390.5" y2="66" class="live"/>
-  <line x1="30" y1="300.5" x2="56" y2="300.5" class="live"/>
-  <g class="badge live-badge"><rect x="352" y="43" width="34" height="19" rx="4"/><text x="369" y="57">334</text></g>
-  <g class="badge live-badge"><rect x="16" y="291" width="34" height="19" rx="4"/><text x="33" y="304">234</text></g>
-</svg>
 
   <h2>What it does</h2>
   <div class="features">
