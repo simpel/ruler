@@ -2,6 +2,8 @@
 
 # Ruler
 
+**[simpel.github.io/ruler](https://simpel.github.io/ruler/)**
+
 A macOS screen ruler that floats above every other window. One horizontal ruler,
 one vertical ruler, tick marks in pixels, a live red line on each ruler showing
 exactly where the pointer is, full-screen crosshair marklines, draggable fixed
