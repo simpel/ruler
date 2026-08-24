@@ -13,17 +13,25 @@ needed.
 
 ## Install
 
-Download the DMG from the [latest release](../../releases/latest) and drag Ruler
-to your Applications folder.
+With Homebrew:
 
-Ruler is not signed with an Apple Developer ID, so macOS quarantines it on
-download. The first time you open it, macOS will refuse — go to **System
-Settings → Privacy & Security**, find the message about Ruler and click **Open
-Anyway**. Or clear the flag yourself:
+```bash
+brew install --cask simpel/tap/ruler
+```
+
+Or download the DMG from the [latest release](../../releases/latest) and drag
+Ruler to your Applications folder.
+
+Either way, Ruler is not signed with an Apple Developer ID, so macOS
+quarantines it — Homebrew always applies the quarantine flag too. Clear it once
+after installing:
 
 ```bash
 xattr -dr com.apple.quarantine /Applications/Ruler.app
 ```
+
+Or open the app once from **System Settings → Privacy & Security → Open
+Anyway**.
 
 Turn on **Launch at Login** in Ruler's menu if you want it to start with your
 session.

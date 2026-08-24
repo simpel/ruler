@@ -33,3 +33,32 @@ jobs:
               xattr -dr com.apple.quarantine /Applications/Ruler.app
 
           NOTES
+
+  update-cask:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Point the Homebrew cask at this release
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        # Skipped when the token secret is absent, so the release still succeeds.
+        if: env.GH_TOKEN != ''
+        run: |
+          VERSION="${TAG#v}"
+          curl -sfL "https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/Ruler-${VERSION}.dmg" -o Ruler.dmg
+          SHA=$(sha256sum Ruler.dmg | cut -d" " -f1)
+
+          git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/simpel/homebrew-tap.git"
+          cd homebrew-tap
+          sed -i -E "s|^  version \".*\"$|  version \"${VERSION}\"|" Casks/ruler.rb
+          sed -i -E "s|^  sha256 \".*\"$|  sha256 \"${SHA}\"|" Casks/ruler.rb
+
+          if git diff --quiet; then
+            echo "Cask already points at ${VERSION}"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -am "Update ruler to ${VERSION}"
+          git push
