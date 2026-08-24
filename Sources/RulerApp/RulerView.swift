@@ -78,18 +78,14 @@ final class RulerView: NSView {
     override var isOpaque: Bool { false }
 
     override func draw(_ dirtyRect: NSRect) {
-        let light = Settings.shared.isLightFace
-        let bg = light ? NSColor(calibratedWhite: 0.97, alpha: 0.94)
-                       : NSColor(calibratedWhite: 0.11, alpha: 0.92)
-        let ink = light ? NSColor(calibratedWhite: 0.12, alpha: 1.0)
-                        : NSColor(calibratedWhite: 0.96, alpha: 1.0)
-        let accent = NSColor.systemRed
+        let bg = Palette.face.withAlphaComponent(0.96)
+        let ink = Palette.ink
 
         let shape = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5),
                                 xRadius: cornerRadius, yRadius: cornerRadius)
         bg.setFill()
         shape.fill()
-        ink.withAlphaComponent(0.22).setStroke()
+        ink.withAlphaComponent(0.3).setStroke()
         shape.lineWidth = 1
         shape.stroke()
 
@@ -102,7 +98,7 @@ final class RulerView: NSView {
         drawTicks(ink: ink)
         drawGrip(ink: ink, highlighted: grabbing)
         if let d = cursorDistance, d >= 0, d <= length {
-            drawCursor(at: d, accent: accent)
+            drawCursor(at: d, accent: Palette.live)
         }
 
         NSGraphicsContext.restoreGraphicsState()

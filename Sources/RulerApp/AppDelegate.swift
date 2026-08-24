@@ -15,7 +15,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var itemCrosshair: NSMenuItem!
     private var itemLaunchAtLogin: NSMenuItem!
     private var opacityItems: [NSMenuItem] = []
-    private var appearanceItems: [NSMenuItem] = []
     private var measureItems: [NSMenuItem] = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -74,16 +73,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         unitsItem.submenu = units
         menu.addItem(unitsItem)
 
-        let appearance = NSMenu()
-        for option in Appearance.allCases {
-            let item = add(to: appearance, option.title, #selector(setAppearance(_:)))
-            item.representedObject = NSNumber(value: option.rawValue)
-            appearanceItems.append(item)
-        }
-        let appearanceItem = NSMenuItem(title: "Appearance", action: nil, keyEquivalent: "")
-        appearanceItem.submenu = appearance
-        menu.addItem(appearanceItem)
-
         let opacity = NSMenu()
         for value in [1.0, 0.85, 0.7, 0.5, 0.3] {
             let item = add(to: opacity, "\(Int(value * 100))%", #selector(setOpacity(_:)))
@@ -123,10 +112,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         itemVertical.state = s.showVertical ? .on : .off
         itemPoints.state = s.devicePixels ? .off : .on
         itemDevicePixels.state = s.devicePixels ? .on : .off
-        for item in appearanceItems {
-            let raw = (item.representedObject as? NSNumber)?.intValue ?? 0
-            item.state = raw == s.appearance.rawValue ? .on : .off
-        }
         itemClickThrough.state = s.clickThrough ? .on : .off
         itemCrosshair.state = s.crosshairEnabled ? .on : .off
         itemLaunchAtLogin.state = SMAppService.mainApp.status == .enabled ? .on : .off
@@ -146,11 +131,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc private func toggleVertical() { Settings.shared.showVertical.toggle() }
     @objc private func usePoints() { Settings.shared.devicePixels = false }
     @objc private func useDevicePixels() { Settings.shared.devicePixels = true }
-    @objc private func setAppearance(_ sender: NSMenuItem) {
-        guard let n = sender.representedObject as? NSNumber,
-              let option = Appearance(rawValue: n.intValue) else { return }
-        Settings.shared.appearance = option
-    }
     @objc private func toggleClickThrough() { Settings.shared.clickThrough.toggle() }
     @objc private func toggleCrosshair() { Settings.shared.crosshairEnabled.toggle() }
 

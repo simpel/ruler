@@ -13,9 +13,10 @@
   :root {
     --bg: #fbfbfd; --panel: #ffffff; --ink: #14161a; --muted: #6c7280;
     --line: rgba(0,0,0,.10); --code-bg: #14161a; --code-ink: #eef0f3;
-    --ruler: #1d2024; --tick: rgba(255,255,255,.8); --canvas: #f2f3f6;
-    --ruler-edge: transparent;
-    --skeleton: rgba(20,22,26,.07); --red: #ff3b30; --teal: #2fb3c9;
+    --ruler: #123a66; --tick: rgba(234,242,255,.85); --canvas: #f2f3f6;
+    --ruler-edge: rgba(234,242,255,.3);
+    --skeleton: rgba(20,22,26,.07); --red: #ff5a36; --amber: #f5b942;
+    --hud: rgba(10,35,64,.92);
     --step: rgba(0,0,0,.07);
     --shadow: 0 1px 2px rgba(0,0,0,.05), 0 12px 32px -12px rgba(0,0,0,.18);
   }
@@ -24,7 +25,6 @@
       --bg: #0e1013; --panel: #16191d; --ink: #f3f4f6; --muted: #9aa1ad;
       --line: rgba(255,255,255,.12); --code-bg: #000; --code-ink: #f3f4f6;
       --canvas: #12151a; --skeleton: rgba(255,255,255,.07); --step: rgba(255,255,255,.12);
-      --ruler: #2c3239; --ruler-edge: rgba(255,255,255,.16);
       --shadow: 0 1px 2px rgba(0,0,0,.4), 0 18px 40px -16px rgba(0,0,0,.7);
     }
   }
@@ -47,11 +47,11 @@
   .skeleton rect { fill: var(--skeleton); }
   .ruler { fill: var(--ruler); stroke: var(--ruler-edge); stroke-width: 1; }
   .ticks line { stroke: var(--tick); stroke-width: 1; }
-  .tick-labels text { fill: rgba(255,255,255,.85); font: 600 9px ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .tick-labels text { fill: rgba(234,242,255,.85); font: 600 9px ui-monospace, SFMono-Regular, Menlo, monospace; }
   .cross { stroke: var(--red); stroke-width: 1; opacity: .5; }
   .live { stroke: var(--red); stroke-width: 1.5; }
-  .guide { stroke: var(--teal); stroke-width: 1; }
-  .measure-box { fill: rgba(255,59,48,.10); stroke: rgba(255,59,48,.6);
+  .guide { stroke: var(--amber); stroke-width: 1; }
+  .measure-box { fill: rgba(255,90,54,.10); stroke: rgba(255,90,54,.6);
                  stroke-width: 1; stroke-dasharray: 4 3; }
   .measure-line { stroke: var(--red); stroke-width: 1.6; }
   .dot { fill: var(--red); }
@@ -59,8 +59,9 @@
                 text-anchor: middle; }
   .badge .l { text-anchor: start; font-weight: 600; }
   .live-badge rect { fill: var(--red); }
-  .guide-badge rect { fill: var(--teal); }
-  .hud rect { fill: rgba(10,12,14,.9); }
+  .guide-badge rect { fill: var(--amber); }
+  .guide-badge text { fill: #0e2a4a; }
+  .hud rect { fill: var(--hud); }
   .hv { opacity: 0; }
   .hv.v4 { opacity: 1; }
 

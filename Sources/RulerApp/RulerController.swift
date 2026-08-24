@@ -35,12 +35,6 @@ final class RulerController {
                                                selector: #selector(applySettings),
                                                name: .rulerSettingsChanged,
                                                object: nil)
-        // Follow the system light/dark switch while Appearance is set to System.
-        DistributedNotificationCenter.default.addObserver(
-            self,
-            selector: #selector(applySettings),
-            name: NSNotification.Name("AppleInterfaceThemeChangedNotification"),
-            object: nil)
         NotificationCenter.default.addObserver(self,
                                                selector: #selector(screensChanged),
                                                name: NSApplication.didChangeScreenParametersNotification,

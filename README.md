@@ -104,7 +104,7 @@ Two kinds of marklines:
 - **Fixed guides** — ⌥-drag off a ruler to pull out a guide that runs parallel to
   it (Photoshop style), or right-click a ruler for *Add Cross Guide Here* (a
   guide crossing the ruler at the clicked value), or use the **Guides** menu to
-  add one at the pointer. Each guide is teal, labelled with its position on the
+  add one at the pointer. Each guide is amber, labelled with its position on the
   matching ruler, and can be dragged to a new position at any time.
   Double-click a guide to remove it; right-click it for remove/clear all.
   Guides are remembered between launches.
@@ -127,7 +127,6 @@ ruler's zero. Positions, lengths, and zero marks are remembered between launches
 - **Guides** — add a horizontal or vertical guide at the pointer, or clear them all
 - **Measure Gesture** — Shift-drag (default), ⇧⌘-drag or ⌥⌘-drag
 - **Units** — *Points (logical pixels)*, what CSS and design tools call pixels, or *Device Pixels*, physical Retina pixels (2× on this display)
-- **Appearance** — *System* (follows macOS light/dark), *Light* or *Dark*
 - **Opacity** — 100% down to 30%, for seeing through the ruler
 - **Click-Through (ignore mouse)** — the rulers and guides stop swallowing clicks; lines keep tracking, but you can no longer drag them (turn it off to move them again)
 - **Reset Position & Size**, **Reset Zero Marks**

@@ -1,11 +1,15 @@
 import AppKit
 
-/// Shared look for the overlay pieces.
+/// Shared blueprint look for the ruler face and overlay pieces: white
+/// linework on blueprint blue, with redline markup and amber guides.
 enum Palette {
-    static let live = NSColor.systemRed          // cursor line / live measurement
-    static let guideLine = NSColor.systemTeal    // fixed guides
+    static let face = NSColor(calibratedRed: 0x12 / 255.0, green: 0x3A / 255.0, blue: 0x66 / 255.0, alpha: 1.0)
+    static let ink = NSColor(calibratedRed: 0xEA / 255.0, green: 0xF2 / 255.0, blue: 0xFF / 255.0, alpha: 1.0)
+    static let live = NSColor(calibratedRed: 0xFF / 255.0, green: 0x5A / 255.0, blue: 0x36 / 255.0, alpha: 1.0)    // cursor line / live measurement ("redline")
+    static let guideLine = NSColor(calibratedRed: 0xF5 / 255.0, green: 0xB9 / 255.0, blue: 0x42 / 255.0, alpha: 1.0)  // fixed guides ("drafting amber")
+    static let guideBadgeText = NSColor(calibratedRed: 0x0E / 255.0, green: 0x2A / 255.0, blue: 0x4A / 255.0, alpha: 1.0)  // dark text for the amber guide badge
 
-    static func hud() -> NSColor { NSColor(calibratedWhite: 0.08, alpha: 0.88) }
+    static func hud() -> NSColor { NSColor(calibratedRed: 0x0A / 255.0, green: 0x23 / 255.0, blue: 0x40 / 255.0, alpha: 0.92) }
 }
 
 /// A click-through hairline window spanning a whole screen. Used for the
