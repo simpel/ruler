@@ -64,7 +64,8 @@
 
   /* The illustration plays the gesture: the pointer drags from one corner to
      the other, the rulers read it out, then it resets. Static markup is the
-     resting state, so with motion turned off the scene just sits at the end. */
+     resting state and frame zero of the loop, so a browser that pauses
+     animations still shows the finished scene rather than an empty one. */
   @media (prefers-reduced-motion: no-preference) {
     .measure-line { stroke-dasharray: 247; animation: draw 9s ease-in-out infinite; }
     .measure-box { transform-box: fill-box; transform-origin: left bottom;
@@ -75,32 +76,34 @@
     .cy { animation: sweepY 9s ease-in-out infinite; }
   }
   @keyframes sweepX {
-    0%, 8% { transform: translateX(-210px); }
-    42%, 94% { transform: translateX(0); }
-    100% { transform: translateX(-210px); }
+    0%, 55% { transform: translateX(0); }
+    62%, 64% { transform: translateX(-210px); }
+    88%, 100% { transform: translateX(0); }
   }
   @keyframes sweepY {
-    0%, 8% { transform: translateY(130px); }
-    42%, 94% { transform: translateY(0); }
-    100% { transform: translateY(130px); }
+    0%, 55% { transform: translateY(0); }
+    62%, 64% { transform: translateY(130px); }
+    88%, 100% { transform: translateY(0); }
   }
   @keyframes draw {
-    0%, 8% { stroke-dashoffset: 247; }
-    42%, 100% { stroke-dashoffset: 0; }
+    0%, 57% { stroke-dashoffset: 0; }
+    63%, 64% { stroke-dashoffset: 247; }
+    88%, 100% { stroke-dashoffset: 0; }
   }
   @keyframes grow {
-    0%, 8% { transform: scale(0, 0); }
-    42%, 100% { transform: scale(1, 1); }
+    0%, 57% { transform: scale(1, 1); }
+    63%, 64% { transform: scale(0, 0); }
+    88%, 100% { transform: scale(1, 1); }
   }
   @keyframes fade {
-    0%, 7% { opacity: 0; }
-    10%, 86% { opacity: 1; }
-    95%, 100% { opacity: 0; }
+    0%, 57% { opacity: 1; }
+    61%, 62% { opacity: 0; }
+    66%, 100% { opacity: 1; }
   }
   @keyframes settle {
-    0%, 42% { opacity: 0; }
-    50%, 86% { opacity: 1; }
-    95%, 100% { opacity: 0; }
+    0%, 55% { opacity: 1; }
+    60%, 86% { opacity: 0; }
+    92%, 100% { opacity: 1; }
   }
 
   h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .09em;
