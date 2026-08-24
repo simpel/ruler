@@ -14,6 +14,7 @@
     --bg: #fbfbfd; --panel: #ffffff; --ink: #14161a; --muted: #6c7280;
     --line: rgba(0,0,0,.10); --code-bg: #14161a; --code-ink: #eef0f3;
     --ruler: #1d2024; --tick: rgba(255,255,255,.8); --canvas: #f2f3f6;
+    --ruler-edge: transparent;
     --skeleton: rgba(20,22,26,.07); --red: #ff3b30; --teal: #2fb3c9;
     --shadow: 0 1px 2px rgba(0,0,0,.05), 0 12px 32px -12px rgba(0,0,0,.18);
   }
@@ -21,7 +22,8 @@
     :root {
       --bg: #0e1013; --panel: #16191d; --ink: #f3f4f6; --muted: #9aa1ad;
       --line: rgba(255,255,255,.12); --code-bg: #000; --code-ink: #f3f4f6;
-      --canvas: #1b1e23; --skeleton: rgba(255,255,255,.07);
+      --canvas: #12151a; --skeleton: rgba(255,255,255,.07);
+      --ruler: #2c3239; --ruler-edge: rgba(255,255,255,.16);
       --shadow: 0 1px 2px rgba(0,0,0,.4), 0 18px 40px -16px rgba(0,0,0,.7);
     }
   }
@@ -42,7 +44,7 @@
           border-radius: 14px; box-shadow: var(--shadow); }
   .canvas { fill: var(--canvas); stroke: var(--line); }
   .skeleton rect { fill: var(--skeleton); }
-  .ruler { fill: var(--ruler); }
+  .ruler { fill: var(--ruler); stroke: var(--ruler-edge); stroke-width: 1; }
   .ticks line { stroke: var(--tick); stroke-width: 1; }
   .tick-labels text { fill: rgba(255,255,255,.85); font: 600 9px ui-monospace, SFMono-Regular, Menlo, monospace; }
   .cross { stroke: var(--red); stroke-width: 1; opacity: .5; }
