@@ -61,6 +61,8 @@
   .live-badge rect { fill: var(--red); }
   .guide-badge rect { fill: var(--teal); }
   .hud rect { fill: rgba(10,12,14,.9); }
+  .hv { opacity: 0; }
+  .hv.v4 { opacity: 1; }
 
   /* The illustration plays the gesture: the pointer drags from one corner to
      the other, the rulers read it out, then it resets. Static markup is the
@@ -76,6 +78,11 @@
     .dot.end, .readout { animation: settle 6.5s ease-in-out infinite; }
     .cx { animation: sweepX 6.5s ease-in-out infinite; }
     .cy { animation: sweepY 6.5s ease-in-out infinite; }
+    .hud { animation: hudSweep 6.5s ease-in-out infinite; }
+    .v1 { animation: hv1 6.5s linear infinite; }
+    .v2 { animation: hv2 6.5s linear infinite; }
+    .v3 { animation: hv3 6.5s linear infinite; }
+    .v4 { animation: hv4 6.5s linear infinite; }
   }
   @keyframes sweepX {
     0%, 22% { transform: translateX(0); }
@@ -86,6 +93,25 @@
     0%, 22% { transform: translateY(0); }
     30%, 31% { transform: translateY(130px); }
     72%, 100% { transform: translateY(0); }
+  }
+  /* The readout rides along with the pointer, its numbers stepping up as the
+     drag grows, so it never shows the finished figure mid-drag. */
+  @keyframes hudSweep {
+    0%, 22% { transform: translate(0, 0); }
+    30%, 31% { transform: translate(-210px, 130px); }
+    72%, 100% { transform: translate(0, 0); }
+  }
+  @keyframes hv1 {
+    0%, 30.9% { opacity: 0; } 31%, 40.9% { opacity: 1; } 41%, 100% { opacity: 0; }
+  }
+  @keyframes hv2 {
+    0%, 40.9% { opacity: 0; } 41%, 50.9% { opacity: 1; } 51%, 100% { opacity: 0; }
+  }
+  @keyframes hv3 {
+    0%, 50.9% { opacity: 0; } 51%, 61.9% { opacity: 1; } 62%, 100% { opacity: 0; }
+  }
+  @keyframes hv4 {
+    0%, 29.9% { opacity: 1; } 30%, 61.9% { opacity: 0; } 62%, 100% { opacity: 1; }
   }
   @keyframes draw {
     0%, 24% { stroke-dashoffset: 0; }
@@ -179,7 +205,10 @@
     <circle cx="390" cy="170" r="3.5" class="dot end"/>
   </g>
   <g class="badge hud"><rect x="398" y="146" width="104" height="34" rx="6"/>
-    <text x="410" y="160" class="l">247 px</text><text x="410" y="173" class="l">W 210  H 130</text></g>
+    <g class="hv v4"><text x="410" y="160" class="l">247 px</text><text x="410" y="173" class="l">W 210  H 130</text></g>
+    <g class="hv v1"><text x="410" y="160" class="l">62 px</text><text x="410" y="173" class="l">W 53  H 33</text></g>
+    <g class="hv v2"><text x="410" y="160" class="l">124 px</text><text x="410" y="173" class="l">W 105  H 65</text></g>
+    <g class="hv v3"><text x="410" y="160" class="l">185 px</text><text x="410" y="173" class="l">W 158  H 98</text></g></g>
 
   <!-- crosshair -->
   <line x1="390.5" y1="0" x2="390.5" y2="430" class="cross cx"/>
