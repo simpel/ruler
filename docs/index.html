@@ -67,43 +67,43 @@
      resting state and frame zero of the loop, so a browser that pauses
      animations still shows the finished scene rather than an empty one. */
   @media (prefers-reduced-motion: no-preference) {
-    .measure-line { stroke-dasharray: 247; animation: draw 9s ease-in-out infinite; }
+    .measure-line { stroke-dasharray: 247; animation: draw 6.5s ease-in-out infinite; }
     .measure-box { transform-box: fill-box; transform-origin: left bottom;
-                  animation: grow 9s ease-in-out infinite; }
-    .measure { animation: fade 9s ease-in-out infinite; }
-    .dot.end, .hud, .readout { animation: settle 9s ease-in-out infinite; }
-    .cx { animation: sweepX 9s ease-in-out infinite; }
-    .cy { animation: sweepY 9s ease-in-out infinite; }
+                  animation: grow 6.5s ease-in-out infinite; }
+    .measure { animation: fade 6.5s ease-in-out infinite; }
+    .dot.end, .hud, .readout { animation: settle 6.5s ease-in-out infinite; }
+    .cx { animation: sweepX 6.5s ease-in-out infinite; }
+    .cy { animation: sweepY 6.5s ease-in-out infinite; }
   }
   @keyframes sweepX {
-    0%, 55% { transform: translateX(0); }
-    62%, 64% { transform: translateX(-210px); }
-    88%, 100% { transform: translateX(0); }
+    0%, 22% { transform: translateX(0); }
+    30%, 31% { transform: translateX(-210px); }
+    72%, 100% { transform: translateX(0); }
   }
   @keyframes sweepY {
-    0%, 55% { transform: translateY(0); }
-    62%, 64% { transform: translateY(130px); }
-    88%, 100% { transform: translateY(0); }
+    0%, 22% { transform: translateY(0); }
+    30%, 31% { transform: translateY(130px); }
+    72%, 100% { transform: translateY(0); }
   }
   @keyframes draw {
-    0%, 57% { stroke-dashoffset: 0; }
-    63%, 64% { stroke-dashoffset: 247; }
-    88%, 100% { stroke-dashoffset: 0; }
+    0%, 24% { stroke-dashoffset: 0; }
+    30%, 31% { stroke-dashoffset: 247; }
+    72%, 100% { stroke-dashoffset: 0; }
   }
   @keyframes grow {
-    0%, 57% { transform: scale(1, 1); }
-    63%, 64% { transform: scale(0, 0); }
-    88%, 100% { transform: scale(1, 1); }
+    0%, 24% { transform: scale(1, 1); }
+    30%, 31% { transform: scale(0, 0); }
+    72%, 100% { transform: scale(1, 1); }
   }
   @keyframes fade {
-    0%, 57% { opacity: 1; }
-    61%, 62% { opacity: 0; }
-    66%, 100% { opacity: 1; }
+    0%, 24% { opacity: 1; }
+    27%, 30% { opacity: 0; }
+    34%, 100% { opacity: 1; }
   }
   @keyframes settle {
-    0%, 55% { opacity: 1; }
-    60%, 86% { opacity: 0; }
-    92%, 100% { opacity: 1; }
+    0%, 22% { opacity: 1; }
+    27%, 68% { opacity: 0; }
+    76%, 100% { opacity: 1; }
   }
 
   h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .09em;
