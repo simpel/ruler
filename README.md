@@ -109,6 +109,8 @@ Two kinds of marklines:
   drag a guide to see its distance to every other guide on that edge, in
   redline badges along the screen edge.
   Double-click a guide to remove it; right-click it for remove/clear all.
+  Hovering or dragging a guide measures it against every other guide of the same
+  orientation — one dimension row per pair, stacked along the screen edge.
   Guides are remembered between launches.
 
 ### Zero and alignment

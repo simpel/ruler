@@ -85,8 +85,8 @@ final class HelpWindowController {
             ("Crosshair", "two screen-wide hairlines follow the pointer — toggle with Crosshair Follows Pointer"),
             ("⌥-drag off a ruler", "pull out a fixed amber guide, running parallel to that ruler"),
             ("Right-click a ruler", "Add Cross Guide Here — a guide crossing it at the clicked value"),
-            ("Drag a guide", "move it; its badge shows its position on the matching ruler"),
-            ("Hover or drag a guide", "shows its distance to every other guide on that edge, in redline badges"),
+            ("Drag a guide", "move it; its badge sits at the screen edge and shows its position on the matching ruler"),
+            ("Hover or drag a guide", "shows its distance to every other guide, one dimension row per pair along the screen edge"),
             ("Double-click a guide", "remove it — or right-click it for remove / clear all"),
             ("Guides menu", "add a guide at the pointer, or clear every guide"),
         ]))

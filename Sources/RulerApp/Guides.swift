@@ -10,6 +10,7 @@ final class GuideWindow: NSPanel {
     let orientation: RulerAxis
     var anchor: NSPoint
     private let guideView: GuideView
+    private let labelWindow = GuideLabelWindow()
 
     init(orientation: RulerAxis, anchor: NSPoint) {
         self.orientation = orientation
@@ -61,10 +62,40 @@ final class GuideWindow: NSPanel {
         }
         setFrame(rect, display: true)
         guideView.needsDisplay = true
+        GuideManager.shared.refreshLabelLayout()
+    }
+
+    /// How much room this guide's badge needs along the screen edge.
+    func labelExtent() -> CGFloat {
+        guard let text = GuideManager.shared.label(for: self) else { return 0 }
+        let size = GuideLabelWindow.badgeSize(for: text)
+        return orientation == .vertical ? size.width : size.height
+    }
+
+    /// The guide's own number lives in its own window: the guide itself is only
+    /// 16pt thick, which used to clip the badge, and the edge is where the
+    /// hover distances appear too. `lane` stacks labels inwards when guides sit
+    /// too close for their badges to fit side by side.
+    func updateLabel(lane: Int) {
+        guard let text = GuideManager.shared.label(for: self) else {
+            labelWindow.hide()
+            return
+        }
+        let screen = NSScreen.screens.first { $0.frame.contains(anchor) }
+            ?? NSScreen.main ?? NSScreen.screens[0]
+        labelWindow.alphaValue = alphaValue
+        labelWindow.update(text: text, orientation: orientation, position: position,
+                           lane: lane, screen: screen)
     }
 
     func refreshLabel() {
-        guideView.needsDisplay = true
+        layout()
+    }
+
+    /// Takes the guide and its label off screen together.
+    func teardown() {
+        labelWindow.hide()
+        orderOut(nil)
     }
 }
 
@@ -129,34 +160,6 @@ final class GuideView: NSView {
         }
         Palette.guideLine.setStroke()
         line.stroke()
-
-        drawLabel()
-    }
-
-    private func drawLabel() {
-        guard let owner,
-              let value = GuideManager.shared.label(for: owner) else { return }
-
-        let text = NSAttributedString(string: value, attributes: [
-            .font: NSFont.monospacedDigitSystemFont(ofSize: 9, weight: .semibold),
-            .foregroundColor: Palette.guideBadgeText,
-        ])
-        let size = text.size()
-        let padX: CGFloat = 4, padY: CGFloat = 1.5
-        var rect = NSRect(x: 0, y: 0, width: size.width + padX * 2, height: size.height + padY * 2)
-        switch orientation {
-        case .horizontal:
-            rect.origin = NSPoint(x: bounds.minX + 10, y: bounds.midY - rect.height / 2)
-        case .vertical:
-            // Sit below the menu bar rather than under it.
-            let inset = (window?.screen).map { $0.frame.maxY - $0.visibleFrame.maxY } ?? 0
-            rect.origin = NSPoint(x: bounds.midX - rect.width / 2,
-                                  y: bounds.maxY - inset - rect.height - 10)
-        }
-
-        Palette.guideLine.withAlphaComponent(0.95).setFill()
-        NSBezierPath(roundedRect: rect, xRadius: 3, yRadius: 3).fill()
-        text.draw(at: NSPoint(x: rect.minX + padX, y: rect.minY + padY))
     }
 
     // MARK: Interaction
@@ -198,10 +201,102 @@ final class GuideView: NSView {
     }
 }
 
+/// One guide's position badge, in its own window so it is never clipped and
+/// always sits at the edge of the screen: the top edge for vertical guides,
+/// the left edge for horizontal ones.
+final class GuideLabelWindow: NSPanel {
+
+    private let labelView = GuideLabelView()
+
+    init() {
+        super.init(contentRect: NSRect(x: 0, y: 0, width: 30, height: 16),
+                   styleMask: [.borderless, .nonactivatingPanel],
+                   backing: .buffered,
+                   defer: false)
+        isFloatingPanel = true
+        hidesOnDeactivate = false
+        ignoresMouseEvents = true
+        isOpaque = false
+        backgroundColor = .clear
+        hasShadow = false
+        isReleasedWhenClosed = false
+        contentView = labelView
+        // Above the rulers, so a number is never hidden under one.
+        level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 1)
+        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle, .stationary]
+    }
+
+    override var canBecomeKey: Bool { false }
+
+    static let laneStep: CGFloat = 20
+    static let edgeInset: CGFloat = 6
+
+    static func badgeSize(for text: String) -> NSSize {
+        GuideLabelView.size(for: text)
+    }
+
+    func update(text: String, orientation: RulerAxis, position: CGFloat, lane: Int, screen: NSScreen) {
+        labelView.text = text
+        let size = labelView.badgeSize()
+        let edge = GuideLabelWindow.edgeInset + CGFloat(lane) * GuideLabelWindow.laneStep
+        let rect: NSRect
+        switch orientation {
+        case .vertical:
+            rect = NSRect(x: (position - size.width / 2).rounded(),
+                          y: (screen.visibleFrame.maxY - edge - size.height).rounded(),
+                          width: size.width, height: size.height)
+        case .horizontal:
+            rect = NSRect(x: (screen.frame.minX + edge).rounded(),
+                          y: (position - size.height / 2).rounded(),
+                          width: size.width, height: size.height)
+        }
+        if frame != rect { setFrame(rect, display: false) }
+        labelView.needsDisplay = true
+        if !isVisible { orderFrontRegardless() }
+    }
+
+    func hide() {
+        if isVisible { orderOut(nil) }
+    }
+}
+
+final class GuideLabelView: NSView {
+
+    var text = ""
+
+    override var isOpaque: Bool { false }
+
+    private var attributed: NSAttributedString {
+        NSAttributedString(string: text, attributes: [
+            .font: NSFont.monospacedDigitSystemFont(ofSize: 9, weight: .semibold),
+            .foregroundColor: Palette.guideBadgeText,
+        ])
+    }
+
+    /// The badge sizes itself to its text, so nothing is ever cut off.
+    func badgeSize() -> NSSize { GuideLabelView.size(for: text) }
+
+    static func size(for text: String) -> NSSize {
+        let s = NSAttributedString(string: text, attributes: [
+            .font: NSFont.monospacedDigitSystemFont(ofSize: 9, weight: .semibold),
+        ]).size()
+        return NSSize(width: ceil(s.width) + 9, height: ceil(s.height) + 4)
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        Palette.guideLine.withAlphaComponent(0.95).setFill()
+        NSBezierPath(roundedRect: bounds, xRadius: 3, yRadius: 3).fill()
+        let text = attributed
+        let size = text.size()
+        text.draw(at: NSPoint(x: (bounds.width - size.width) / 2,
+                              y: (bounds.height - size.height) / 2))
+    }
+}
+
 /// Shows the distance from a hovered (or dragged) guide to every other guide
-/// of the same orientation on its screen, as redline badges along the screen
-/// edge that guide's own position label already sits on — the top edge for
-/// vertical guides, the left edge for horizontal ones.
+/// of the same orientation on its screen, as pale amber badges along the same
+/// screen edge the position labels use — the top edge for vertical guides, the
+/// left edge for horizontal ones — in a lane just inside them.
 final class GuideDistanceOverlay: NSPanel {
 
     private let distanceView = GuideDistanceView()
@@ -225,9 +320,10 @@ final class GuideDistanceOverlay: NSPanel {
 
     override var canBecomeKey: Bool { false }
 
-    func show(hovered: GuideWindow, siblings: [GuideWindow], on screen: NSScreen) {
+    func show(hovered: GuideWindow, siblings: [GuideWindow], on screen: NSScreen, startInset: CGFloat) {
         if frame != screen.frame { setFrame(screen.frame, display: false) }
-        distanceView.configure(hovered: hovered, siblings: siblings, screen: screen)
+        distanceView.configure(hovered: hovered, siblings: siblings, screen: screen,
+                               startInset: startInset)
         if !isVisible { orderFrontRegardless() }
     }
 
@@ -238,57 +334,100 @@ final class GuideDistanceOverlay: NSPanel {
 
 final class GuideDistanceView: NSView {
 
-    private struct Badge { let text: String; let anchor: NSPoint }
+    /// One dimension line: it spans the gap between the hovered guide and one
+    /// sibling, with the distance sitting on it, so you can see which pair of
+    /// lines the number belongs to.
+    private struct Dimension {
+        let text: String
+        let from: NSPoint
+        let to: NSPoint
+    }
 
-    private var badges: [Badge] = []
+    private var dimensions: [Dimension] = []
     private var orientation: RulerAxis = .vertical
+
+    private let baseInset: CGFloat = 12      // clearance past the position badges
+    private let laneStep: CGFloat = 21       // one row per sibling
+    private let tick: CGFloat = 5
 
     override var isOpaque: Bool { false }
 
-    /// `anchor` marks where the label band sits along the screen edge; the
-    /// badge itself is drawn hanging off it, matching how a guide's own
-    /// position label is placed relative to its window's bounds.
-    func configure(hovered: GuideWindow, siblings: [GuideWindow], screen: NSScreen) {
+    func configure(hovered: GuideWindow, siblings: [GuideWindow], screen: NSScreen, startInset: CGFloat) {
         orientation = hovered.orientation
         let scale = Settings.shared.devicePixels ? screen.backingScaleFactor : 1.0
-        let edgeInset: CGFloat = 10
         let menuBarInset = screen.frame.maxY - screen.visibleFrame.maxY
         let origin = screen.frame.origin
 
-        badges = siblings.map { sibling in
-            let distance = abs(hovered.position - sibling.position) * scale
-            let mid = (hovered.position + sibling.position) / 2
-            let anchor: NSPoint
+        // Nearest sibling gets the lane closest to the edge.
+        let ordered = siblings.sorted {
+            abs($0.position - hovered.position) < abs($1.position - hovered.position)
+        }
+
+        dimensions = ordered.enumerated().map { index, sibling in
+            let lane = startInset + baseInset + CGFloat(index) * laneStep
+            let a = hovered.position
+            let b = sibling.position
+            let text = "\(Int((abs(b - a) * scale).rounded()))"
             switch orientation {
-            case .vertical:
-                anchor = NSPoint(x: mid - origin.x, y: screen.frame.height - menuBarInset - edgeInset)
-            case .horizontal:
-                anchor = NSPoint(x: edgeInset, y: mid - origin.y)
+            case .vertical:   // vertical guides sit side by side: rows across the top
+                let y = screen.frame.height - menuBarInset - lane
+                return Dimension(text: text,
+                                 from: NSPoint(x: a - origin.x, y: y),
+                                 to: NSPoint(x: b - origin.x, y: y))
+            case .horizontal: // horizontal guides stack: columns down the left
+                let x = lane
+                return Dimension(text: text,
+                                 from: NSPoint(x: x, y: a - origin.y),
+                                 to: NSPoint(x: x, y: b - origin.y))
             }
-            return Badge(text: "\(Int(distance.rounded()))", anchor: anchor)
         }
         needsDisplay = true
     }
 
     override func draw(_ dirtyRect: NSRect) {
-        for badge in badges { drawBadge(badge) }
+        for dimension in dimensions { drawDimension(dimension) }
     }
 
-    private func drawBadge(_ badge: Badge) {
-        let text = NSAttributedString(string: badge.text, attributes: [
+    private func drawDimension(_ dimension: Dimension) {
+        let path = NSBezierPath()
+        path.lineWidth = 1
+        path.move(to: dimension.from)
+        path.line(to: dimension.to)
+
+        // End ticks, so each row reads as a span rather than a stray line.
+        for point in [dimension.from, dimension.to] {
+            switch orientation {
+            case .vertical:
+                path.move(to: NSPoint(x: point.x.rounded() + 0.5, y: point.y - tick))
+                path.line(to: NSPoint(x: point.x.rounded() + 0.5, y: point.y + tick))
+            case .horizontal:
+                path.move(to: NSPoint(x: point.x - tick, y: point.y.rounded() + 0.5))
+                path.line(to: NSPoint(x: point.x + tick, y: point.y.rounded() + 0.5))
+            }
+        }
+        Palette.guideTint.withAlphaComponent(0.9).setStroke()
+        path.stroke()
+
+        drawBadge(dimension.text,
+                  at: NSPoint(x: (dimension.from.x + dimension.to.x) / 2,
+                              y: (dimension.from.y + dimension.to.y) / 2))
+    }
+
+    private func drawBadge(_ string: String, at point: NSPoint) {
+        let text = NSAttributedString(string: string, attributes: [
             .font: NSFont.monospacedDigitSystemFont(ofSize: 9, weight: .semibold),
-            .foregroundColor: NSColor.white,
+            .foregroundColor: Palette.guideBadgeText,
         ])
         let size = text.size()
-        let padX: CGFloat = 4, padY: CGFloat = 1.5
-        var rect = NSRect(x: 0, y: 0, width: size.width + padX * 2, height: size.height + padY * 2)
-        switch orientation {
-        case .vertical:
-            rect.origin = NSPoint(x: badge.anchor.x - rect.width / 2, y: badge.anchor.y - rect.height)
-        case .horizontal:
-            rect.origin = NSPoint(x: badge.anchor.x, y: badge.anchor.y - rect.height / 2)
-        }
-        Palette.live.withAlphaComponent(0.95).setFill()
+        let padX: CGFloat = 4.5, padY: CGFloat = 2
+        var rect = NSRect(x: point.x - (size.width + padX * 2) / 2,
+                          y: point.y - (size.height + padY * 2) / 2,
+                          width: size.width + padX * 2,
+                          height: size.height + padY * 2)
+        rect.origin.x = min(max(rect.origin.x, bounds.minX + 2), bounds.maxX - rect.width - 2)
+        rect.origin.y = min(max(rect.origin.y, bounds.minY + 2), bounds.maxY - rect.height - 2)
+
+        Palette.guideTint.setFill()
         NSBezierPath(roundedRect: rect, xRadius: 3, yRadius: 3).fill()
         text.draw(at: NSPoint(x: rect.minX + padX, y: rect.minY + padY))
     }
@@ -319,19 +458,21 @@ final class GuideManager {
         guide.ignoresMouseEvents = Settings.shared.clickThrough
         guide.orderFrontRegardless()
         guides.append(guide)
+        refreshLabelLayout()
         save()
         return guide
     }
 
     func remove(_ guide: GuideWindow) {
-        guide.orderOut(nil)
+        guide.teardown()
         guides.removeAll { $0 === guide }
         endHover(guide)
+        refreshLabelLayout()
         save()
     }
 
     func clear() {
-        guides.forEach { $0.orderOut(nil) }
+        guides.forEach { $0.teardown() }
         guides.removeAll()
         hoveredGuide = nil
         distanceOverlay.hide()
@@ -369,6 +510,39 @@ final class GuideManager {
         distanceOverlay.hide()
     }
 
+    /// Position badges are pinned to the screen edge, so guides sitting close
+    /// together would have their labels overlap. Pack them into as few lanes as
+    /// the badge widths allow, then remember how deep the stack went so the
+    /// distance rows can start inside it.
+    private var laneDepth: [RulerAxis: Int] = [:]
+
+    func refreshLabelLayout() {
+        for orientation in [RulerAxis.horizontal, RulerAxis.vertical] {
+            let ordered = guides
+                .filter { $0.orientation == orientation }
+                .sorted { $0.position < $1.position }
+
+            var laneEnds: [CGFloat] = []
+            var deepest = 0
+            for guide in ordered {
+                let extent = guide.labelExtent()
+                let start = guide.position - extent / 2
+                let gap: CGFloat = 4
+                var lane = 0
+                while lane < laneEnds.count, laneEnds[lane] + gap > start { lane += 1 }
+                if lane == laneEnds.count {
+                    laneEnds.append(guide.position + extent / 2)
+                } else {
+                    laneEnds[lane] = guide.position + extent / 2
+                }
+                guide.updateLabel(lane: lane)
+                deepest = max(deepest, lane)
+            }
+            laneDepth[orientation] = ordered.isEmpty ? 0 : deepest + 1
+        }
+        updateDistanceOverlay()
+    }
+
     private func updateDistanceOverlay() {
         guard let hovered = hoveredGuide else { distanceOverlay.hide(); return }
         let screen = NSScreen.screens.first { $0.frame.contains(hovered.anchor) }
@@ -377,11 +551,14 @@ final class GuideManager {
             $0 !== hovered && $0.orientation == hovered.orientation && screen.frame.contains($0.anchor)
         }
         guard !siblings.isEmpty else { distanceOverlay.hide(); return }
-        distanceOverlay.show(hovered: hovered, siblings: siblings, on: screen)
+        let lanes = CGFloat(laneDepth[hovered.orientation] ?? 1)
+        let startInset = GuideLabelWindow.edgeInset + lanes * GuideLabelWindow.laneStep
+        distanceOverlay.show(hovered: hovered, siblings: siblings, on: screen,
+                             startInset: startInset)
     }
 
     func refreshLabels() {
-        guides.forEach { $0.refreshLabel() }
+        refreshLabelLayout()
     }
 
     // MARK: Persistence
@@ -407,5 +584,6 @@ final class GuideManager {
             guide.orderFrontRegardless()
             guides.append(guide)
         }
+        refreshLabelLayout()
     }
 }

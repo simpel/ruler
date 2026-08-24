@@ -7,6 +7,8 @@ enum Palette {
     static let ink = NSColor(calibratedRed: 0xEA / 255.0, green: 0xF2 / 255.0, blue: 0xFF / 255.0, alpha: 1.0)
     static let live = NSColor(calibratedRed: 0xFF / 255.0, green: 0x5A / 255.0, blue: 0x36 / 255.0, alpha: 1.0)    // cursor line / live measurement ("redline")
     static let guideLine = NSColor(calibratedRed: 0xF5 / 255.0, green: 0xB9 / 255.0, blue: 0x42 / 255.0, alpha: 1.0)  // fixed guides ("drafting amber")
+    /// A paler wash of the guide amber, for the hover distance badges.
+    static let guideTint: NSColor = guideLine.blended(withFraction: 0.55, of: NSColor.white) ?? guideLine
     static let guideBadgeText = NSColor(calibratedRed: 0x0E / 255.0, green: 0x2A / 255.0, blue: 0x4A / 255.0, alpha: 1.0)  // dark text for the amber guide badge
 
     static func hud() -> NSColor { NSColor(calibratedRed: 0x0A / 255.0, green: 0x23 / 255.0, blue: 0x40 / 255.0, alpha: 0.92) }
