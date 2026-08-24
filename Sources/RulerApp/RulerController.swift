@@ -77,6 +77,7 @@ final class RulerController {
         }
 
         GuideManager.shared.applySettings()
+        MeasurementStore.shared.applySettings()
     }
 
     @objc private func screensChanged() {
@@ -94,6 +95,10 @@ final class RulerController {
     func resetGeometry() {
         panels.forEach { $0.resetGeometry() }
         GuideManager.shared.refreshLabels()
+    }
+
+    func clearMeasurements() {
+        MeasurementStore.shared.clear()
     }
 
     func addGuideAtPointer(orientation: RulerAxis) {
@@ -146,10 +151,11 @@ final class RulerController {
             wasArmed = armed
             wasButtonDown = buttonDown
         }
-        if idle && measureAnchor == nil { return }
+        if idle && measureAnchor == nil && MeasurementStore.shared.isEmpty { return }
 
         updateCursorLines(mouse)
         updateCrosshair(mouse)
+        MeasurementStore.shared.updateHitRegions(pointer: mouse)
         updateMeasurement(mouse, armed: armed, buttonDown: buttonDown)
     }
 
@@ -172,6 +178,16 @@ final class RulerController {
     }
 
     private func updateMeasurement(_ mouse: NSPoint, armed: Bool, buttonDown: Bool) {
+        // Releasing the button keeps the measurement on screen as its own window,
+        // so several things can be measured at once.
+        if wasButtonDown && !buttonDown, let a = measureAnchor {
+            MeasurementStore.shared.add(anchor: a, current: measureCurrent)
+            measureAnchor = nil
+            measureOverlay.hide()
+            setMeasureSpans(nil, nil)
+            return
+        }
+
         if armed {
             if buttonDown && !wasButtonDown {
                 measureAnchor = mouse          // gesture starts on the press

@@ -69,7 +69,12 @@ final class HelpWindowController {
         ]))
 
         out.append(heading("Measuring — \(gesture.title.lowercased())"))
-        out.append(body("Hold the modifier to see the pointer's X and Y. Keep holding it and drag: Ruler draws the line between press and release with the distance in pixels plus the width and height of the drag, and both rulers highlight the span you covered. Let go of the mouse and the reading stays while the modifier is held.\n"))
+        out.append(body("Hold the modifier to see the pointer's X and Y. Keep holding it and drag: Ruler draws the line between press and release with the distance in pixels plus the width and height of the drag, and both rulers highlight the span you covered.\n"))
+        out.append(items([
+            ("Measurements stay", "letting go of the mouse leaves the measurement on screen, so you can measure several things at once"),
+            ("Dismiss one", "click the ✕ on its readout badge"),
+            ("Dismiss all", "Clear All Measurements in the menu"),
+        ]))
         out.append(items([
             ("Change the gesture", "Measure Gesture in the menu — shift, ⇧⌘ or ⌥⌘"),
             ("Note", "Ruler never swallows clicks, so the app under the pointer also receives the drag. Switch to ⌥⌘ if that gets in the way."),

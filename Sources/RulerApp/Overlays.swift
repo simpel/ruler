@@ -91,6 +91,7 @@ final class MeasureOverlayWindow: NSPanel {
         measureView.anchor = anchor.map { NSPoint(x: $0.x - frame.minX, y: $0.y - frame.minY) }
         measureView.current = NSPoint(x: current.x - frame.minX, y: current.y - frame.minY)
         measureView.scale = scale
+        measureView.showsClose = false
         measureView.screenOrigin = NSPoint(x: screen.frame.minX - frame.minX,
                                            y: screen.frame.maxY - frame.minY)
         measureView.needsDisplay = true
@@ -110,6 +111,15 @@ final class MeasureView: NSView {
     var scale: CGFloat = 1
     /// Top-left corner of the pointer's screen, in this view's coordinates.
     var screenOrigin: NSPoint = .zero
+
+    /// Kept measurements carry a dismiss button; the live one does not.
+    var showsClose = false
+    var onClose: (() -> Void)?
+    var closeHot = false {
+        didSet { if oldValue != closeHot { needsDisplay = true } }
+    }
+    /// Where the dismiss button was last drawn, in view coordinates.
+    private(set) var closeRect: NSRect?
 
     override var isOpaque: Bool { false }
 
@@ -158,10 +168,50 @@ final class MeasureView: NSView {
         if dx > 0.5 || dy > 0.5 {
             lines.append("W \(Int(dx.rounded()))   H \(Int(dy.rounded()))")
         }
-        drawBadge(lines, near: b)
+        let badge = drawBadge(lines, near: b)
+        if showsClose {
+            drawClose(on: badge)
+        } else {
+            closeRect = nil
+        }
     }
 
-    private func drawBadge(_ lines: [String], near point: NSPoint) {
+    /// A small ✕ hanging off the readout badge, like a chip's dismiss control.
+    private func drawClose(on badge: NSRect) {
+        let d: CGFloat = 17
+        var rect = NSRect(x: badge.maxX - d / 2, y: badge.maxY - d / 2, width: d, height: d)
+        rect.origin.x = min(rect.origin.x, bounds.maxX - d - 1)
+        rect.origin.y = min(rect.origin.y, bounds.maxY - d - 1)
+        closeRect = rect
+
+        (closeHot ? Palette.live : Palette.hud()).setFill()
+        NSBezierPath(ovalIn: rect).fill()
+        NSColor.white.withAlphaComponent(0.25).setStroke()
+        let ring = NSBezierPath(ovalIn: rect.insetBy(dx: 0.5, dy: 0.5))
+        ring.lineWidth = 1
+        ring.stroke()
+
+        let inset = d * 0.32
+        let cross = NSBezierPath()
+        cross.lineWidth = 1.6
+        cross.lineCapStyle = .round
+        cross.move(to: NSPoint(x: rect.minX + inset, y: rect.minY + inset))
+        cross.line(to: NSPoint(x: rect.maxX - inset, y: rect.maxY - inset))
+        cross.move(to: NSPoint(x: rect.minX + inset, y: rect.maxY - inset))
+        cross.line(to: NSPoint(x: rect.maxX - inset, y: rect.minY + inset))
+        NSColor.white.setStroke()
+        cross.stroke()
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        guard let closeRect else { return }
+        if closeRect.insetBy(dx: -4, dy: -4).contains(convert(event.locationInWindow, from: nil)) {
+            onClose?()
+        }
+    }
+
+    @discardableResult
+    private func drawBadge(_ lines: [String], near point: NSPoint) -> NSRect {
         let text = NSAttributedString(string: lines.joined(separator: "\n"), attributes: [
             .font: NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .semibold),
             .foregroundColor: NSColor.white,
@@ -177,5 +227,6 @@ final class MeasureView: NSView {
         NSBezierPath(roundedRect: rect, xRadius: 4, yRadius: 4).fill()
         text.draw(in: NSRect(x: rect.minX + padX, y: rect.minY + padY,
                              width: size.width, height: size.height))
+        return rect
     }
 }

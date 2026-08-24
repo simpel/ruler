@@ -77,6 +77,7 @@ universal app and publishes the DMG and zip as a GitHub release.
 | Right-click a ruler | Set zero · add a guide · clear guides · hide this ruler |
 | Move the pointer anywhere on screen | Red line + badge follow it on both rulers, plus full-screen crosshair |
 | **Shift-drag anywhere on screen** | Measure: distance, width and height between the two points |
+| **Click the ✕ on a measurement** | Dismiss it — measurements stay on screen until you do |
 | **⌥-drag off a ruler** | Pull out a fixed guide line |
 
 ### Measuring (shift-drag)
@@ -84,8 +85,10 @@ universal app and publishes the DMG and zip as a GitHub release.
 Hold Shift and a crosshair readout shows the pointer's X/Y. Keep Shift held and
 drag: a line is drawn between press and release with a badge showing the
 distance in pixels plus the width and height of the drag, and both rulers
-highlight the span you covered. The measurement stays on screen while Shift is
-held, so you can release the mouse and read it; letting Shift go clears it.
+highlight the span you covered. When you release the mouse the measurement stays on screen with a ✕ button on
+its readout, so you can measure several things at once. Dismiss one with its ✕,
+or all of them with **Clear All Measurements** in the menu. They are not kept
+across launches.
 
 Because Ruler never intercepts your clicks (see Notes), the app underneath also
 receives the shift-drag — in a text editor that means it will extend a

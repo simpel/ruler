@@ -97,6 +97,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         itemClickThrough = add(to: menu, "Click-Through (ignore mouse)", #selector(toggleClickThrough))
 
         menu.addItem(.separator())
+        _ = add(to: menu, "Clear All Measurements", #selector(clearMeasurements))
         _ = add(to: menu, "Reset Position & Size", #selector(resetGeometry))
         _ = add(to: menu, "Reset Zero Marks", #selector(resetZeros))
 
@@ -162,6 +163,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc private func addHorizontalGuide() { controller.addGuideAtPointer(orientation: .horizontal) }
     @objc private func addVerticalGuide() { controller.addGuideAtPointer(orientation: .vertical) }
     @objc private func clearGuides() { GuideManager.shared.clear() }
+    @objc private func clearMeasurements() { controller.clearMeasurements() }
 
     @objc private func setOpacity(_ sender: NSMenuItem) {
         guard let n = sender.representedObject as? NSNumber else { return }
