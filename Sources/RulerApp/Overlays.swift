@@ -10,6 +10,15 @@ enum Palette {
     static let guideBadgeText = NSColor(calibratedRed: 0x0E / 255.0, green: 0x2A / 255.0, blue: 0x4A / 255.0, alpha: 1.0)  // dark text for the amber guide badge
 
     static func hud() -> NSColor { NSColor(calibratedRed: 0x0A / 255.0, green: 0x23 / 255.0, blue: 0x40 / 255.0, alpha: 0.92) }
+
+    /// A subtle top-lit sheen for the ruler face, lighter at the top edge.
+    static let faceGradient: NSGradient = {
+        let white = NSColor(calibratedWhite: 1.0, alpha: 1.0)
+        let black = NSColor(calibratedWhite: 0.0, alpha: 1.0)
+        let top = face.blended(withFraction: 0.14, of: white) ?? face
+        let bottom = face.blended(withFraction: 0.16, of: black) ?? face
+        return NSGradient(starting: top, ending: bottom) ?? NSGradient(colors: [face, face])!
+    }()
 }
 
 /// A click-through hairline window spanning a whole screen. Used for the

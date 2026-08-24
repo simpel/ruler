@@ -78,13 +78,21 @@ final class RulerView: NSView {
     override var isOpaque: Bool { false }
 
     override func draw(_ dirtyRect: NSRect) {
-        let bg = Palette.face.withAlphaComponent(0.96)
         let ink = Palette.ink
 
         let shape = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5),
                                 xRadius: cornerRadius, yRadius: cornerRadius)
-        bg.setFill()
-        shape.fill()
+
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current?.cgContext.setAlpha(0.96)
+        let shadow = NSShadow()
+        shadow.shadowColor = NSColor.black.withAlphaComponent(0.35)
+        shadow.shadowOffset = NSSize(width: 0, height: -1.5)
+        shadow.shadowBlurRadius = 3
+        shadow.set()
+        Palette.faceGradient.draw(in: shape, angle: -90)
+        NSGraphicsContext.restoreGraphicsState()
+
         ink.withAlphaComponent(0.3).setStroke()
         shape.lineWidth = 1
         shape.stroke()
