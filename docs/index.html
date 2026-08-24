@@ -77,12 +77,17 @@
   .cmd.small { padding: 11px 11px 11px 16px; }
   .cmd.small code { font-size: 13px; }
 
-  .hero-cmd { max-width: 460px; margin: 28px auto 14px; text-align: left;
-             box-shadow: var(--shadow); }
-  .hero-cmd code { font-size: 14.5px; }
-  .quiet { color: var(--muted); font-size: 13.5px; margin: 0 0 10px; }
-  .quiet:last-child { margin: 12px 0 0; }
+  .quiet { color: var(--muted); font-size: 13.5px; margin: 8px 0 0; }
   .quiet a { color: var(--ink); }
+
+  .step { display: grid; grid-template-columns: 34px 1fr; gap: 16px; }
+  .step + .step { margin-top: 26px; padding-top: 26px; border-top: 1px solid var(--line); }
+  .num { width: 34px; height: 34px; border-radius: 50%; background: var(--ink); color: var(--bg);
+        display: grid; place-items: center; font-size: 15px; font-weight: 700; }
+  .step h3 { font-size: 17px; margin: 5px 0 4px; }
+  .step p { margin: 0 0 12px; font-size: 14.5px; color: var(--muted); }
+  .step .cmd { margin: 0; }
+  .outro { text-align: center; color: var(--muted); font-size: 14px; margin: 26px 0 0; }
 
   .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
   .feature { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
@@ -103,12 +108,39 @@
     <img src="icon.png" alt="Ruler icon" width="104" height="104">
     <h1>Ruler</h1>
     <p class="tag">Measure anything on your screen.</p>
-    <div class="cmd hero-cmd">
-      <code id="brew">brew install --cask simpel/tap/ruler</code>
-      <button data-copy="brew">Copy</button>
-    </div>
     <p class="meta">Free · Universal · macOS 13 or later</p>
   </header>
+
+  <h2>Install — two steps</h2>
+  <div class="card">
+    <div class="step">
+      <div class="num">1</div>
+      <div>
+        <h3>Install it</h3>
+        <p>Paste this in Terminal.</p>
+        <div class="cmd">
+          <code id="brew">brew install --cask simpel/tap/ruler</code>
+          <button data-copy="brew">Copy</button>
+        </div>
+        <p class="quiet">No Homebrew yet? Get it at <a href="https://brew.sh">brew.sh</a>.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">2</div>
+      <div>
+        <h3>Let macOS open it</h3>
+        <p>Ruler isn’t signed with an Apple Developer ID, so the first launch is
+          blocked. Run this once — or open <b>System Settings → Privacy &amp;
+          Security</b> and click <b>Open Anyway</b>.</p>
+        <div class="cmd">
+          <code id="xattr">xattr -dr com.apple.quarantine /Applications/Ruler.app</code>
+          <button data-copy="xattr">Copy</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="outro">That’s it — Ruler appears in your menu bar. There’s no Dock icon.</p>
 
   <svg class="shot" viewBox="0 0 720 430" role="img" aria-label="Two pixel rulers overlaying a page, with a crosshair, a measurement and a guide">
   <rect x="0.5" y="0.5" width="719" height="429" rx="14" class="canvas"/>
@@ -147,19 +179,6 @@
   <g class="badge live-badge"><rect x="352" y="43" width="34" height="19" rx="4"/><text x="369" y="57">334</text></g>
   <g class="badge live-badge"><rect x="16" y="291" width="34" height="19" rx="4"/><text x="33" y="304">234</text></g>
 </svg>
-
-  <h2>First run</h2>
-  <div class="card">
-    <p class="quiet">Needs <a href="https://brew.sh">Homebrew</a>. Ruler isn’t signed
-      with an Apple Developer ID, so macOS blocks the first launch: open
-      <b>System Settings → Privacy &amp; Security</b> and click <b>Open Anyway</b>,
-      or run this once.</p>
-    <div class="cmd small">
-      <code id="xattr">xattr -dr com.apple.quarantine /Applications/Ruler.app</code>
-      <button data-copy="xattr">Copy</button>
-    </div>
-    <p class="quiet">Ruler then lives in your menu bar — there’s no Dock icon.</p>
-  </div>
 
   <h2>What it does</h2>
   <div class="features">
