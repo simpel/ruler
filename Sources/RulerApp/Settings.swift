@@ -5,21 +5,6 @@ enum RulerAxis {
     case vertical
 }
 
-/// Ruler face appearance.
-enum Appearance: Int, CaseIterable {
-    case system = 0
-    case light = 1
-    case dark = 2
-
-    var title: String {
-        switch self {
-        case .system: return "System"
-        case .light: return "Light"
-        case .dark: return "Dark"
-        }
-    }
-}
-
 /// Modifier combination that arms the click-and-drag measuring gesture.
 enum MeasureModifier: Int, CaseIterable {
     case shift = 0
@@ -61,12 +46,10 @@ final class Settings {
 
     private init() {
         migrateLegacyDomain()
-        migrateAppearance()
         defaults.register(defaults: [
             Key.showHorizontal: true,
             Key.showVertical: true,
             Key.devicePixels: false,
-            Key.appearance: Appearance.system.rawValue,
             Key.opacity: 1.0,
             Key.clickThrough: false,
             Key.crosshair: true,
@@ -78,8 +61,6 @@ final class Settings {
         static let showHorizontal = "showHorizontal"
         static let showVertical = "showVertical"
         static let devicePixels = "devicePixels"
-        static let appearance = "appearance"
-        static let legacyLightAppearance = "lightAppearance"
         static let opacity = "opacity"
         static let clickThrough = "clickThrough"
         static let crosshair = "crosshair"
@@ -106,21 +87,6 @@ final class Settings {
         set { defaults.set(newValue, forKey: Key.devicePixels); changed() }
     }
 
-    var appearance: Appearance {
-        get { Appearance(rawValue: defaults.integer(forKey: Key.appearance)) ?? .system }
-        set { defaults.set(newValue.rawValue, forKey: Key.appearance); changed() }
-    }
-
-    /// The appearance actually drawn, with `.system` resolved against macOS.
-    var isLightFace: Bool {
-        switch appearance {
-        case .light: return true
-        case .dark: return false
-        case .system:
-            return NSApp.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) != .darkAqua
-        }
-    }
-
     /// The bundle identifier changed when the app was published; bring the
     /// settings from the old domain along on first launch.
     private func migrateLegacyDomain() {
@@ -129,8 +95,8 @@ final class Settings {
         defaults.set(true, forKey: flag)
 
         guard let legacy = UserDefaults(suiteName: "local.joelsanden.RulerApp") else { return }
-        let keys = [Key.showHorizontal, Key.showVertical, Key.devicePixels, Key.appearance,
-                    Key.legacyLightAppearance, Key.opacity, Key.clickThrough, Key.crosshair,
+        let keys = [Key.showHorizontal, Key.showVertical, Key.devicePixels,
+                    Key.opacity, Key.clickThrough, Key.crosshair,
                     Key.measureModifier, Key.guides,
                     Key.frame + "h", Key.frame + "v", Key.zero + "h", Key.zero + "v"]
         for key in keys where defaults.object(forKey: key) == nil {
@@ -138,14 +104,6 @@ final class Settings {
                 defaults.set(value, forKey: key)
             }
         }
-    }
-
-    /// Carries an existing dark/light choice over to the three-way setting.
-    private func migrateAppearance() {
-        guard defaults.object(forKey: Key.appearance) == nil,
-              let wasLight = defaults.object(forKey: Key.legacyLightAppearance) as? Bool else { return }
-        defaults.set(wasLight ? Appearance.light.rawValue : Appearance.dark.rawValue,
-                     forKey: Key.appearance)
     }
 
     var opacity: Double {

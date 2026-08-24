@@ -132,7 +132,7 @@ final class GuideView: NSView {
 
         let text = NSAttributedString(string: value, attributes: [
             .font: NSFont.monospacedDigitSystemFont(ofSize: 9, weight: .semibold),
-            .foregroundColor: NSColor.white,
+            .foregroundColor: Palette.guideBadgeText,
         ])
         let size = text.size()
         let padX: CGFloat = 4, padY: CGFloat = 1.5

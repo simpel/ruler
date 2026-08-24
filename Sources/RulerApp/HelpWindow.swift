@@ -83,7 +83,7 @@ final class HelpWindowController {
         out.append(heading("Marklines and guides"))
         out.append(items([
             ("Crosshair", "two screen-wide hairlines follow the pointer — toggle with Crosshair Follows Pointer"),
-            ("⌥-drag off a ruler", "pull out a fixed teal guide, running parallel to that ruler"),
+            ("⌥-drag off a ruler", "pull out a fixed amber guide, running parallel to that ruler"),
             ("Right-click a ruler", "Add Cross Guide Here — a guide crossing it at the clicked value"),
             ("Drag a guide", "move it; its badge shows its position on the matching ruler"),
             ("Double-click a guide", "remove it — or right-click it for remove / clear all"),
@@ -94,7 +94,6 @@ final class HelpWindowController {
         out.append(heading("Units, look and layout"))
         out.append(items([
             ("Units", "Points are the logical pixels CSS and design tools use. Device Pixels are physical Retina pixels — twice as many on this display."),
-            ("Appearance", "System follows the macOS light/dark setting; Light and Dark pin the ruler face"),
             ("Opacity", "100% down to 30%"),
             ("Click-Through", "rulers and guides stop taking clicks, so you can work underneath them. The lines keep tracking, but you cannot drag them until you switch it off."),
             ("Reset Position & Size", "lays the rulers out as an L so both zero marks sit on exactly the same pixel"),
