@@ -71,7 +71,9 @@
     .measure-box { transform-box: fill-box; transform-origin: left bottom;
                   animation: grow 6.5s ease-in-out infinite; }
     .measure { animation: fade 6.5s ease-in-out infinite; }
-    .dot.end, .hud, .readout { animation: settle 6.5s ease-in-out infinite; }
+    /* The HUD stays put and visible the whole loop; the ruler readouts hide
+       while the pointer sweeps, since their numbers would be wrong in transit. */
+    .dot.end, .readout { animation: settle 6.5s ease-in-out infinite; }
     .cx { animation: sweepX 6.5s ease-in-out infinite; }
     .cy { animation: sweepY 6.5s ease-in-out infinite; }
   }
