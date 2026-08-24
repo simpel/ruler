@@ -16,13 +16,14 @@
     --ruler: #1d2024; --tick: rgba(255,255,255,.8); --canvas: #f2f3f6;
     --ruler-edge: transparent;
     --skeleton: rgba(20,22,26,.07); --red: #ff3b30; --teal: #2fb3c9;
+    --step: rgba(0,0,0,.07);
     --shadow: 0 1px 2px rgba(0,0,0,.05), 0 12px 32px -12px rgba(0,0,0,.18);
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #0e1013; --panel: #16191d; --ink: #f3f4f6; --muted: #9aa1ad;
       --line: rgba(255,255,255,.12); --code-bg: #000; --code-ink: #f3f4f6;
-      --canvas: #12151a; --skeleton: rgba(255,255,255,.07);
+      --canvas: #12151a; --skeleton: rgba(255,255,255,.07); --step: rgba(255,255,255,.12);
       --ruler: #2c3239; --ruler-edge: rgba(255,255,255,.16);
       --shadow: 0 1px 2px rgba(0,0,0,.4), 0 18px 40px -16px rgba(0,0,0,.7);
     }
@@ -73,14 +74,24 @@
                 color: #fff; border-radius: 7px; padding: 6px 11px; font-size: 12.5px;
                 cursor: pointer; font-family: inherit; }
   .cmd button:hover { background: rgba(255,255,255,.12); }
-  .or { text-align: center; color: var(--muted); font-size: 13px; margin: 16px 0; }
-  .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-  .btn { display: inline-block; text-decoration: none; border-radius: 10px;
-         padding: 11px 18px; font-size: 15px; font-weight: 500; border: 1px solid var(--line); }
-  .btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
-  .btn.ghost { color: var(--ink); }
-  .note { margin-top: 14px; font-size: 13.5px; color: var(--muted); }
-  .note code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+  .cmd.small { padding: 11px 11px 11px 16px; }
+  .cmd.small code { font-size: 13px; }
+
+  .cta { margin: 28px 0 12px; }
+  .download { display: inline-block; text-decoration: none; background: var(--ink);
+             color: var(--bg); border-radius: 12px; padding: 15px 30px;
+             font-size: 17px; font-weight: 600; box-shadow: var(--shadow); }
+  .download:hover { opacity: .88; }
+
+  .steps { margin: 0; padding: 0; list-style: none; counter-reset: step; }
+  .steps li { position: relative; padding-left: 38px; margin-bottom: 18px; font-size: 15px; }
+  .steps li:last-child { margin-bottom: 0; }
+  .steps li::before { counter-increment: step; content: counter(step);
+      position: absolute; left: 0; top: 0; width: 25px; height: 25px; border-radius: 50%;
+      background: var(--step); display: grid; place-items: center;
+      font-size: 12.5px; font-weight: 600; }
+  .steps .cmd { margin-top: 10px; }
+  .quiet { color: var(--muted); font-size: 13.5px; margin: 24px 0 8px; }
 
   .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
   .feature { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
@@ -101,7 +112,8 @@
     <img src="icon.png" alt="Ruler icon" width="104" height="104">
     <h1>Ruler</h1>
     <p class="tag">Measure anything on your screen.</p>
-    <p class="meta">macOS 13+ · Apple Silicon &amp; Intel · Free, MIT licensed</p>
+    <p class="cta"><a class="download" href="https://github.com/simpel/ruler/releases/latest/download/Ruler.dmg">Download for macOS</a></p>
+    <p class="meta">Free · Universal · macOS 13 or later</p>
   </header>
 
   <svg class="shot" viewBox="0 0 720 430" role="img" aria-label="Two pixel rulers overlaying a page, with a crosshair, a measurement and a guide">
@@ -144,19 +156,22 @@
 
   <h2>Install</h2>
   <div class="card">
-    <div class="cmd">
+    <ol class="steps">
+      <li>Open <b>Ruler.dmg</b> and drag Ruler into your Applications folder.</li>
+      <li>Ruler isn’t signed with an Apple Developer ID, so the first launch is
+        blocked. Open <b>System Settings → Privacy &amp; Security</b> and click
+        <b>Open Anyway</b> — or run this once:
+        <div class="cmd">
+          <code id="xattr">xattr -dr com.apple.quarantine /Applications/Ruler.app</code>
+          <button data-copy="xattr">Copy</button>
+        </div>
+      </li>
+      <li>Look for the ruler in your menu bar. There’s no Dock icon.</li>
+    </ol>
+    <p class="quiet">Prefer Homebrew?</p>
+    <div class="cmd small">
       <code id="brew">brew install --cask simpel/tap/ruler</code>
       <button data-copy="brew">Copy</button>
-    </div>
-    <p class="or">or</p>
-    <div class="row">
-      <a class="btn primary" href="https://github.com/simpel/ruler/releases/latest">Download the DMG</a>
-      <a class="btn ghost" href="https://github.com/simpel/ruler">Source on GitHub</a>
-    </div>
-    <p class="note">Ruler isn’t signed with an Apple Developer ID, so macOS quarantines it. Clear that once after installing:</p>
-    <div class="cmd" style="margin-top:10px">
-      <code id="xattr">xattr -dr com.apple.quarantine /Applications/Ruler.app</code>
-      <button data-copy="xattr">Copy</button>
     </div>
   </div>
 
@@ -171,7 +186,7 @@
   </div>
 
   <footer>
-    Built by <a href="https://github.com/simpel">simpel</a> · <a href="https://github.com/simpel/ruler">MIT</a>
+    Built by simpel · MIT licensed
   </footer>
 </div>
 <script>

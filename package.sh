@@ -19,5 +19,9 @@ hdiutil create -volname "Ruler $VERSION" -srcfolder "$STAGE" -ov -format UDZO \
   "$DIST/Ruler-$VERSION.dmg" >/dev/null
 rm -rf "$STAGE"
 
+# An unversioned copy so the site can link a stable direct-download URL:
+# https://github.com/<repo>/releases/latest/download/Ruler.dmg
+cp "$DIST/Ruler-$VERSION.dmg" "$DIST/Ruler.dmg"
+
 echo "Packaged:"
 ls -lh "$DIST" | tail -n +2

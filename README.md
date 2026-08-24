@@ -15,14 +15,14 @@ needed.
 
 ## Install
 
-With Homebrew:
+[**Download Ruler.dmg**](https://github.com/simpel/ruler/releases/latest/download/Ruler.dmg)
+and drag Ruler into your Applications folder.
+
+Or with Homebrew:
 
 ```bash
 brew install --cask simpel/tap/ruler
 ```
-
-Or download the DMG from the [latest release](../../releases/latest) and drag
-Ruler to your Applications folder.
 
 Either way, Ruler is not signed with an Apple Developer ID, so macOS
 quarantines it — Homebrew always applies the quarantine flag too. Clear it once
