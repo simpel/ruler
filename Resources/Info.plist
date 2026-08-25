@@ -9,7 +9,7 @@
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.github.simpel.ruler</string>
+	<string>se.joelsanden.ruler</string>
 	<key>CFBundleName</key>
 	<string>Ruler</string>
 	<key>CFBundlePackageType</key>

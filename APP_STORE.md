@@ -37,9 +37,8 @@ your Apple account.
    security find-identity -v -p codesigning
    ```
 
-2. **App ID** (Identifiers → +) — register `com.github.simpel.ruler` (the
-   bundle ID Ruler already ships under). No extra capabilities need enabling
-   for it.
+2. **App ID** (Identifiers → +) — register `se.joelsanden.ruler` (Ruler's
+   bundle ID as of this version). No extra capabilities need enabling for it.
 
 3. **Provisioning profile** (Profiles → + → Mac App Store) — tie it to that
    App ID and the Apple Distribution certificate, then download the
@@ -71,7 +70,7 @@ your Apple account.
    ```bash
    xcrun altool --upload-package build/dist/Ruler-<version>-appstore.pkg \
      --type osx --apple-id <app-apple-id> \
-     --bundle-id com.github.simpel.ruler \
+     --bundle-id se.joelsanden.ruler \
      --bundle-version <n> --bundle-short-version-string <version> \
      --apiKey <KEY_ID> --apiIssuer <ISSUER_ID>
    ```

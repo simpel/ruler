@@ -67,4 +67,4 @@ productbuild --component "$APP" /Applications --sign "$APPSTORE_INSTALLER_IDENTI
 echo
 echo "Built $PKG"
 echo "Upload it with Transporter (recommended), or:"
-echo "  xcrun altool --upload-package \"$PKG\" --type osx --apple-id <app-apple-id> --bundle-id com.github.simpel.ruler --bundle-version $VERSION --bundle-short-version-string $VERSION --apiKey <KEY_ID> --apiIssuer <ISSUER_ID>"
+echo "  xcrun altool --upload-package \"$PKG\" --type osx --apple-id <app-apple-id> --bundle-id se.joelsanden.ruler --bundle-version $VERSION --bundle-short-version-string $VERSION --apiKey <KEY_ID> --apiIssuer <ISSUER_ID>"

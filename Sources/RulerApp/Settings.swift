@@ -87,21 +87,26 @@ final class Settings {
         set { defaults.set(newValue, forKey: Key.devicePixels); changed() }
     }
 
-    /// The bundle identifier changed when the app was published; bring the
-    /// settings from the old domain along on first launch.
+    /// The bundle identifier has changed twice since Ruler first shipped;
+    /// bring settings from every prior domain along on first launch, most
+    /// recent first, so nothing is lost across an update.
     private func migrateLegacyDomain() {
         let flag = "migratedLegacyDomain"
         guard !defaults.bool(forKey: flag) else { return }
         defaults.set(true, forKey: flag)
 
-        guard let legacy = UserDefaults(suiteName: "local.joelsanden.RulerApp") else { return }
+        let legacyDomains = ["com.github.simpel.ruler", "local.joelsanden.RulerApp"]
         let keys = [Key.showHorizontal, Key.showVertical, Key.devicePixels,
                     Key.opacity, Key.clickThrough, Key.crosshair,
                     Key.measureModifier, Key.guides,
                     Key.frame + "h", Key.frame + "v", Key.zero + "h", Key.zero + "v"]
-        for key in keys where defaults.object(forKey: key) == nil {
-            if let value = legacy.object(forKey: key) {
-                defaults.set(value, forKey: key)
+
+        for domain in legacyDomains {
+            guard let legacy = UserDefaults(suiteName: domain) else { continue }
+            for key in keys where defaults.object(forKey: key) == nil {
+                if let value = legacy.object(forKey: key) {
+                    defaults.set(value, forKey: key)
+                }
             }
         }
     }
