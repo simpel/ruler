@@ -25,6 +25,7 @@ cd "$(dirname "$0")"
 [ -f "$APPSTORE_PROFILE" ] || { echo "error: provisioning profile not found at $APPSTORE_PROFILE" >&2; exit 1; }
 
 VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Resources/Info.plist)
+BUILD=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" Resources/Info.plist)
 APP="build/appstore/Ruler.app"
 DIST="build/dist"
 
@@ -92,4 +93,4 @@ echo "(upload it under App Information -> App Store icon -- it is never taken fr
 echo
 echo "Built $PKG"
 echo "Upload it with Transporter (recommended), or:"
-echo "  xcrun altool --upload-package \"$PKG\" --type osx --apple-id <app-apple-id> --bundle-id se.joelsanden.ruler --bundle-version $VERSION --bundle-short-version-string $VERSION --apiKey <KEY_ID> --apiIssuer <ISSUER_ID>"
+echo "  xcrun altool --upload-package \"$PKG\" --type osx --apple-id <app-apple-id> --bundle-id se.joelsanden.ruler --bundle-version $BUILD --bundle-short-version-string $VERSION --apiKey <KEY_ID> --apiIssuer <ISSUER_ID>"
