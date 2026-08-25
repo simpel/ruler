@@ -67,6 +67,9 @@ notarize the DMG with `xcrun notarytool submit` and staple it.
 Pushing a `v*` tag runs `.github/workflows/release.yml`, which builds the
 universal app and publishes the DMG and zip as a GitHub release.
 
+A Mac App Store submission is a separate, sandboxed build — see
+[APP_STORE.md](APP_STORE.md).
+
 ## Using the rulers
 
 | Action | Result |
