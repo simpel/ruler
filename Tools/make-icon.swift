@@ -23,33 +23,43 @@ func squircle(_ rect: NSRect) -> NSBezierPath {
     NSBezierPath(roundedRect: rect, xRadius: rect.width * 0.2237, yRadius: rect.height * 0.2237)
 }
 
-func drawIcon(size S: CGFloat) {
-    // Icon body sits inside the canvas the way macOS app icons do.
-    let inset = S * 0.098
+func drawIcon(size S: CGFloat, marketing: Bool = false) {
+    // Icon body sits inside the canvas the way macOS app icons do — except for
+    // the App Store marketing icon, which Apple masks itself: that one must be
+    // a flat, opaque, edge-to-edge square with no inset, radius or shadow.
+    let inset = marketing ? 0 : S * 0.098
     let body = NSRect(x: inset, y: inset, width: S - inset * 2, height: S - inset * 2)
     let detailed = S >= 64
     let midDetail = S >= 32
 
-    // Backdrop
-    if S >= 64 {
-        let shadow = NSShadow()
-        shadow.shadowColor = NSColor.black.withAlphaComponent(0.35)
-        shadow.shadowBlurRadius = S * 0.03
-        shadow.shadowOffset = NSSize(width: 0, height: -S * 0.012)
-        shadow.set()
-    }
-    let shape = squircle(body)
-    color(0x2B2F35).setFill()
-    shape.fill()
-    NSShadow().set()
+    if !marketing {
+        // Backdrop
+        if S >= 64 {
+            let shadow = NSShadow()
+            shadow.shadowColor = NSColor.black.withAlphaComponent(0.35)
+            shadow.shadowBlurRadius = S * 0.03
+            shadow.shadowOffset = NSSize(width: 0, height: -S * 0.012)
+            shadow.set()
+        }
+        let shape = squircle(body)
+        color(0x2B2F35).setFill()
+        shape.fill()
+        NSShadow().set()
 
-    NSGraphicsContext.saveGraphicsState()
-    shape.addClip()
+        NSGraphicsContext.saveGraphicsState()
+        shape.addClip()
+    } else {
+        color(0x2B2F35).setFill()
+        NSBezierPath(rect: body).fill()
+        NSGraphicsContext.saveGraphicsState()
+        NSBezierPath(rect: body).addClip()
+    }
+
     let gradient = NSGradient(colors: [color(0x3C424A), color(0x1D2024)])!
     gradient.draw(in: body, angle: -90)
 
     // Faint highlight along the top edge.
-    if detailed {
+    if detailed && !marketing {
         color(0xFFFFFF, 0.10).setStroke()
         let rim = squircle(body.insetBy(dx: S * 0.006, dy: S * 0.006))
         rim.lineWidth = S * 0.006
@@ -122,7 +132,7 @@ func drawIcon(size S: CGFloat) {
     NSGraphicsContext.restoreGraphicsState()
 }
 
-func render(pixels: Int) -> Data {
+func render(pixels: Int, marketing: Bool = false) -> Data {
     let rep = NSBitmapImageRep(bitmapDataPlanes: nil,
                               pixelsWide: pixels, pixelsHigh: pixels,
                               bitsPerSample: 8, samplesPerPixel: 4,
@@ -132,9 +142,46 @@ func render(pixels: Int) -> Data {
     NSGraphicsContext.saveGraphicsState()
     NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
     NSGraphicsContext.current?.imageInterpolation = .high
-    drawIcon(size: CGFloat(pixels))
+    drawIcon(size: CGFloat(pixels), marketing: marketing)
     NSGraphicsContext.restoreGraphicsState()
     return rep.representation(using: .png, properties: [:])!
+}
+
+/// The App Store Connect marketing icon: 1024x1024, flat, no alpha channel —
+/// Apple's own validator rejects a transparent or rounded-corner version.
+/// Drawing a second time into a no-alpha context (directly, or by compositing
+/// a CGImage into one) rendered blank both ways — something about that
+/// context doesn't take AppKit drawing. So this reuses the PNG bytes from the
+/// already-proven render() path unchanged, decodes them back, and copies the
+/// raw RGB bytes into a fresh alpha-free bitmap by hand — no second draw pass.
+func renderMarketingIcon() -> Data {
+    let pixels = 1024
+    let pngData = render(pixels: pixels, marketing: true)
+    guard let decoded = NSBitmapImageRep(data: pngData) else {
+        fatalError("could not decode the rendered marketing icon")
+    }
+    let flat = NSBitmapImageRep(bitmapDataPlanes: nil,
+                                pixelsWide: pixels, pixelsHigh: pixels,
+                                bitsPerSample: 8, samplesPerPixel: 3,
+                                hasAlpha: false, isPlanar: false,
+                                colorSpaceName: .deviceRGB,
+                                bytesPerRow: 0, bitsPerPixel: 0)!
+    guard let src = decoded.bitmapData, let dst = flat.bitmapData else {
+        fatalError("no bitmap data to copy")
+    }
+    let srcSamples = decoded.samplesPerPixel
+    let srcRowBytes = decoded.bytesPerRow
+    let dstRowBytes = flat.bytesPerRow
+    for y in 0..<pixels {
+        for x in 0..<pixels {
+            let s0 = y * srcRowBytes + x * srcSamples
+            let d0 = y * dstRowBytes + x * 3
+            dst[d0] = src[s0]
+            dst[d0 + 1] = src[s0 + 1]
+            dst[d0 + 2] = src[s0 + 2]
+        }
+    }
+    return flat.representation(using: .png, properties: [:])!
 }
 
 let variants: [(String, Int)] = [
@@ -151,3 +198,10 @@ for (name, pixels) in variants {
     try! data.write(to: URL(fileURLWithPath: outputPath + "/" + name))
 }
 print("wrote \(variants.count) images to \(outputPath)")
+
+if CommandLine.arguments.contains("--marketing") {
+    let data = renderMarketingIcon()
+    let path = outputPath + "/AppStoreIcon-1024.png"
+    try! data.write(to: URL(fileURLWithPath: path))
+    print("wrote marketing icon to \(path)")
+}

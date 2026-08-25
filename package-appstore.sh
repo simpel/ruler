@@ -52,10 +52,27 @@ lipo -create -output "$APP/Contents/MacOS/Ruler" \
   ".build/release/RulerApp" ".build-${OTHER_ARCH}/release/RulerApp"
 printf 'APPL????' > "$APP/Contents/PkgInfo"
 
+# A profile downloaded through a browser carries com.apple.quarantine, and a
+# plain cp propagates it into the bundle — Apple's validator rejects any
+# quarantined file inside an uploaded package.
+xattr -cr "$APP"
+
+# The profile itself carries the entitlements a matching signature must
+# contain (application-identifier, team-identifier, keychain-access-groups).
+# Xcode merges these in automatically under automatic signing; signing by hand
+# needs to do the same merge explicitly, or the signature won't match what the
+# profile promises and TestFlight/App Store validation rejects the build.
+PROFILE_PLIST=$(mktemp)
+MERGED_ENTITLEMENTS=$(mktemp)
+security cms -D -i "$APPSTORE_PROFILE" > "$PROFILE_PLIST"
+/usr/libexec/PlistBuddy -x -c "Print :Entitlements" "$PROFILE_PLIST" > "$MERGED_ENTITLEMENTS"
+/usr/libexec/PlistBuddy -c "Add :com.apple.security.app-sandbox bool true" "$MERGED_ENTITLEMENTS"
+
 echo "Signing with $APPSTORE_SIGN_IDENTITY..."
 codesign --force --deep --options runtime --timestamp \
-  --entitlements Resources/Ruler.entitlements \
+  --entitlements "$MERGED_ENTITLEMENTS" \
   --sign "$APPSTORE_SIGN_IDENTITY" "$APP"
+rm -f "$PROFILE_PLIST" "$MERGED_ENTITLEMENTS"
 codesign --verify --deep --strict "$APP"
 spctl --assess --type execute "$APP" 2>&1 || true   # informational; MAS apps aren't Gatekeeper-checked this way
 
@@ -63,7 +80,15 @@ mkdir -p "$DIST"
 PKG="$DIST/Ruler-$VERSION-appstore.pkg"
 echo "Packaging $PKG..."
 productbuild --component "$APP" /Applications --sign "$APPSTORE_INSTALLER_IDENTITY" "$PKG"
+xattr -c "$PKG" 2>/dev/null || true
 
+echo
+if [ ! -f Resources/AppStoreIcon-1024.png ] || [ Tools/make-icon.swift -nt Resources/AppStoreIcon-1024.png ]; then
+  swift Tools/make-icon.swift build/AppIcon.iconset --marketing
+  cp build/AppIcon.iconset/AppStoreIcon-1024.png Resources/AppStoreIcon-1024.png
+fi
+echo "App Store Connect marketing icon: Resources/AppStoreIcon-1024.png"
+echo "(upload it under App Information -> App Store icon -- it is never taken from the binary)"
 echo
 echo "Built $PKG"
 echo "Upload it with Transporter (recommended), or:"
