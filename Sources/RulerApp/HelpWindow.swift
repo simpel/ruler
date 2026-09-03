@@ -64,7 +64,7 @@ final class HelpWindowController {
             ("Drag a ruler", "move it anywhere on screen"),
             ("Drag the far end", "change its length — the end with the grip dots"),
             ("Double-click a ruler", "set its zero mark at that spot"),
-            ("Right-click a ruler", "set or reset zero, add a cross guide, hide the ruler"),
+            ("Right-click a ruler", "set or reset zero, add a cross guide, open settings, hide the ruler, or quit"),
             ("Move the pointer", "a red line and a pixel readout follow it on both rulers"),
         ]))
 
@@ -103,10 +103,11 @@ final class HelpWindowController {
 
         out.append(heading("Good to know"))
         out.append(items([
+            ("Controls window", "Ruler Controls lets you toggle rulers, units, gestures and opacity. Close or minimize it at any time, or reopen it with ⌘,"),
             ("No permissions", "pointer, buttons and modifiers are polled 60 times a second rather than tapped, so Ruler needs no accessibility or screen-recording access."),
             ("Always on top", "the rulers join every Space and stay above full-screen windows."),
             ("Launch at Login", "toggle it in the menu — macOS starts Ruler with your session."),
-            ("Quit", "Quit Ruler in the menu, or ⌘Q while the menu is open."),
+            ("Quit", "Quit Ruler in the menu, the controls window, the ruler right-click menu, or ⌘Q."),
         ]))
         return out
     }

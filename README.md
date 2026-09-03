@@ -77,7 +77,7 @@ A Mac App Store submission is a separate, sandboxed build — see
 | Drag anywhere on a ruler | Move it |
 | Drag the far end (right end / bottom end) | Change its length — the handle lights up with a resize arrow when the pointer is over it |
 | Double-click a spot | Set the zero mark there |
-| Right-click a ruler | Set zero · add a guide · clear guides · hide this ruler |
+| Right-click a ruler | Set zero · add a guide · clear guides · settings · hide this ruler · quit |
 | Move the pointer anywhere on screen | Red line + badge follow it on both rulers, plus full-screen crosshair |
 | **Shift-drag anywhere on screen** | Measure: distance, width and height between the two points |
 | **Click the ✕ on a measurement** | Dismiss it — measurements stay on screen until you do |
@@ -137,6 +137,7 @@ ruler's zero. Positions, lengths, and zero marks are remembered between launches
 - **Opacity** — 100% down to 30%, for seeing through the ruler
 - **Click-Through (ignore mouse)** — the rulers and guides stop swallowing clicks; lines keep tracking, but you can no longer drag them (turn it off to move them again)
 - **Reset Position & Size**, **Reset Zero Marks**
+- **Ruler Settings…** — a compact window to adjust rulers, units, opacity and gestures (⌘,)
 - **Ruler Help…** — a window listing every gesture and option
 - **Quit Ruler** (⌘Q)
 
@@ -163,6 +164,7 @@ Sources/RulerApp/
   RulerController.swift     Owns every window; 60 Hz pointer/button/modifier poll
   RulerPanel.swift          Borderless non-activating floating panel, L layout
   RulerView.swift           Tick/label/cursor drawing, drag + resize + zero + guide pull
+  ControlWindow.swift       Settings and controls window (close, minimize)
   Overlays.swift            Crosshair hairlines and the measurement overlay
   HelpWindow.swift          The Ruler Help window
   Guides.swift              Fixed guide windows, dragging and persistence

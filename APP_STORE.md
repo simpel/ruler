@@ -85,6 +85,23 @@ your Apple account.
    processed. No notarization step — Apple's review replaces it for App
    Store builds.
 
+## Resubmission Notes (Guideline 4 Design)
+
+If replying to the Guideline 4 rejection in App Store Connect / Resolution Center:
+
+```
+Thank you for your review and feedback.
+
+In response to Guideline 4 (Design) regarding window title bar controls:
+
+1. The app now presents a dedicated "Ruler Controls" window on launch with standard macOS title bar controls (Close and Minimize buttons). Users can easily manage all app settings (ruler toggles, units, gestures, opacity, resets) from this window, minimize it, or close it. It can be reopened at any time via the menu bar icon (⌘,), the ruler right-click contextual menu, or keyboard shortcut.
+2. The rulers themselves float above other windows as clean, unobtrusive measuring tools.
+3. We have also added a "Quit Ruler" option (⌘Q) directly into the right-click contextual menu on both rulers, in the new Controls window, and in the menu bar extra.
+4. The build number has been bumped to 5 for this submission.
+
+We look forward to your review.
+```
+
 ## What I can still help with
 
 - Composing/rendering a screenshot for the listing.

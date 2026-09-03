@@ -491,6 +491,16 @@ final class RulerView: NSView {
         hide.target = self
         menu.addItem(hide)
 
+        menu.addItem(.separator())
+
+        let settings = NSMenuItem(title: "Metiri Controls…", action: #selector(showSettings), keyEquivalent: ",")
+        settings.target = self
+        menu.addItem(settings)
+
+        let quit = NSMenuItem(title: "Quit Metiri", action: #selector(quitApp), keyEquivalent: "q")
+        quit.target = self
+        menu.addItem(quit)
+
         return menu
     }
 
@@ -522,5 +532,13 @@ final class RulerView: NSView {
         } else {
             Settings.shared.showVertical = false
         }
+    }
+
+    @objc private func showSettings() {
+        ControlWindowController.shared.show()
+    }
+
+    @objc private func quitApp() {
+        NSApp.terminate(nil)
     }
 }

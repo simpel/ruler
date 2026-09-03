@@ -20,6 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         buildStatusItem()
         controller.start()
+        ControlWindowController.shared.show()
     }
 
     func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool { true }
@@ -93,8 +94,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         itemLaunchAtLogin = add(to: menu, "Launch at Login", #selector(toggleLaunchAtLogin))
 
         menu.addItem(.separator())
-        _ = add(to: menu, "Ruler Help…", #selector(showHelp), key: "?")
-        _ = add(to: menu, "Quit Ruler", #selector(quit), key: "q")
+        _ = add(to: menu, "Metiri Controls…", #selector(showSettings), key: ",")
+        _ = add(to: menu, "Metiri Help…", #selector(showHelp), key: "?")
+        _ = add(to: menu, "Quit Metiri", #selector(quit), key: "q")
         return menu
     }
 
@@ -175,6 +177,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             NSApp.activate(ignoringOtherApps: true)
             alert.runModal()
         }
+    }
+
+    @objc func showSettings() {
+        ControlWindowController.shared.show()
+    }
+
+    func resetGeometryFromControls() {
+        controller.resetGeometry()
+    }
+
+    func applySettingsFromControls() {
+        controller.applySettings()
+    }
+
+    func clearMeasurementsFromControls() {
+        controller.clearMeasurements()
     }
 
     @objc private func showHelp() {
