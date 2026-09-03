@@ -19,9 +19,9 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-: "${APPSTORE_SIGN_IDENTITY:?Set APPSTORE_SIGN_IDENTITY to your Apple Distribution identity}"
-: "${APPSTORE_INSTALLER_IDENTITY:?Set APPSTORE_INSTALLER_IDENTITY to your Mac Installer Distribution identity}"
-: "${APPSTORE_PROFILE:?Set APPSTORE_PROFILE to the path of your downloaded provisioning profile}"
+: "${APPSTORE_SIGN_IDENTITY:=511BE9DE277D67F7EFD3B135EE3046032A9AB9A6}"
+: "${APPSTORE_INSTALLER_IDENTITY:=3rd Party Mac Developer Installer: Joel Sanden (D4F66LSYSF)}"
+: "${APPSTORE_PROFILE:=$HOME/Downloads/Ruler_MAS.provisionprofile}"
 [ -f "$APPSTORE_PROFILE" ] || { echo "error: provisioning profile not found at $APPSTORE_PROFILE" >&2; exit 1; }
 
 VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Resources/Info.plist)
