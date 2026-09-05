@@ -21,7 +21,17 @@ cd "$(dirname "$0")"
 
 : "${APPSTORE_SIGN_IDENTITY:=511BE9DE277D67F7EFD3B135EE3046032A9AB9A6}"
 : "${APPSTORE_INSTALLER_IDENTITY:=3rd Party Mac Developer Installer: Joel Sanden (D4F66LSYSF)}"
-: "${APPSTORE_PROFILE:=$HOME/Downloads/Ruler_MAS.provisionprofile}"
+if [ -z "${APPSTORE_PROFILE:-}" ]; then
+  if [ -f "Resources/Distanser_MAS.provisionprofile" ]; then
+    APPSTORE_PROFILE="Resources/Distanser_MAS.provisionprofile"
+  elif [ -f "$HOME/Downloads/Distanser_MAS.provisionprofile" ]; then
+    APPSTORE_PROFILE="$HOME/Downloads/Distanser_MAS.provisionprofile"
+  elif [ -f "$HOME/Downloads/Ruler_MAS.provisionprofile" ]; then
+    APPSTORE_PROFILE="$HOME/Downloads/Ruler_MAS.provisionprofile"
+  else
+    APPSTORE_PROFILE="$HOME/Downloads/Distanser_MAS.provisionprofile"
+  fi
+fi
 [ -f "$APPSTORE_PROFILE" ] || { echo "error: provisioning profile not found at $APPSTORE_PROFILE" >&2; exit 1; }
 
 VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Resources/Info.plist)
