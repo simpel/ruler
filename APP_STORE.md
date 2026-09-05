@@ -97,7 +97,7 @@ In response to Guideline 4 (Design) regarding window title bar controls:
 1. The app now presents a dedicated "Distanser Controls" window on launch with standard macOS title bar controls (Close and Minimize buttons). Users can easily manage all app settings (ruler toggles, units, gestures, opacity, resets) from this window, minimize it, or close it. It can be reopened at any time via the menu bar icon (⌘,), the ruler right-click contextual menu, or keyboard shortcut.
 2. The rulers themselves float above other windows as clean, unobtrusive measuring tools.
 3. We have also added a "Quit Distanser" option (⌘Q) directly into the right-click contextual menu on both rulers, in the new Controls window, and in the menu bar extra.
-4. The build number has been bumped to 6 for this submission.
+4. The build number has been bumped to 7 for this submission.
 
 We look forward to your review.
 ```
