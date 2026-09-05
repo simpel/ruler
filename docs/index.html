@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Metiri — a screen ruler for macOS</title>
-<meta name="description" content="Metiri: pixel rulers that float above every window on macOS. Live cursor readout, crosshair, guides, drag-to-measure, and dedicated controls. Free and open source.">
+<title>Distanser — a screen ruler for macOS</title>
+<meta name="description" content="Distanser: pixel rulers that float above every window on macOS. Live cursor readout, crosshair, guides, drag-to-measure, and dedicated controls. Free and open source.">
 <link rel="icon" href="icon.png">
-<meta property="og:title" content="Metiri — a screen ruler for macOS">
+<meta property="og:title" content="Distanser — a screen ruler for macOS">
 <meta property="og:description" content="Two pixel rulers that float above every window on macOS. Live cursor readout, crosshair, guides, drag-to-measure, and dedicated controls.">
 <meta property="og:image" content="https://www.joelsanden.se/ruler/icon.png">
 <style>
@@ -199,13 +199,13 @@
 <body>
 <div class="wrap">
   <header>
-    <img src="icon.png" alt="Metiri icon" width="104" height="104">
-    <h1>Metiri</h1>
+    <img src="icon.png" alt="Distanser icon" width="104" height="104">
+    <h1>Distanser</h1>
     <p class="tag">Measure anything on your screen.</p>
     <p class="meta">Free · Universal · macOS 13 or later · Created by Joel Sandén</p>
   </header>
 
-  <svg class="shot" viewBox="0 0 720 430" role="img" aria-label="Metiri screen rulers and controls overlaying a page, with crosshair, measurement, and guide">
+  <svg class="shot" viewBox="0 0 720 430" role="img" aria-label="Distanser screen rulers and controls overlaying a page, with crosshair, measurement, and guide">
   <defs>
     <linearGradient id="rulerGradient" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#1c4a7e"/>
@@ -264,14 +264,14 @@
   <g class="badge live-badge readout"><rect x="352" y="43" width="34" height="19" rx="4"/><text x="369" y="57">334</text></g>
   <g class="badge live-badge readout"><rect x="16" y="161" width="34" height="19" rx="4"/><text x="33" y="174">104</text></g>
 
-  <!-- Floating Metiri Controls Window -->
+  <!-- Floating Distanser Controls Window -->
   <g class="controls-window" filter="url(#windowShadow)">
     <rect x="512" y="78" width="186" height="326" rx="10" class="ctrl-win"/>
     <!-- Traffic lights -->
     <circle cx="526" cy="93" r="3.6" fill="#ff5f56"/>
     <circle cx="538" cy="93" r="3.6" fill="#ffbd2e"/>
     <!-- Title -->
-    <text x="610" y="96" class="ctrl-title">Metiri Controls</text>
+    <text x="610" y="96" class="ctrl-title">Distanser Controls</text>
 
     <!-- DISPLAY Section -->
     <text x="526" y="117" class="ctrl-head">DISPLAY</text>
@@ -325,7 +325,7 @@
     <text x="646" y="307" class="ctrl-btn-text">Clear Guides</text>
     <!-- Quit Button -->
     <rect x="526" y="318" width="158" height="18" class="ctrl-btn"/>
-    <text x="605" y="330" class="ctrl-btn-text">Quit Metiri</text>
+    <text x="605" y="330" class="ctrl-btn-text">Quit Distanser</text>
     <!-- Author Credit Link -->
     <text x="605" y="350" class="ctrl-author">Created by <tspan fill="#f5b942" text-decoration="underline">Joel Sandén</tspan></text>
   </g>
@@ -339,7 +339,7 @@
         <h3>Install it</h3>
         <p>Paste this in Terminal.</p>
         <div class="cmd">
-          <code id="brew">brew install --cask simpel/tap/ruler</code>
+          <code id="brew">brew install --cask simpel/tap/distanser</code>
           <button data-copy="brew">Copy</button>
         </div>
         <p class="quiet">No Homebrew yet? Get it at <a href="https://brew.sh">brew.sh</a>.</p>
@@ -350,17 +350,17 @@
       <div class="num">2</div>
       <div>
         <h3>Let macOS open it</h3>
-        <p>Metiri isn’t signed with an Apple Developer ID yet, so the first launch is
+        <p>Distanser isn’t signed with an Apple Developer ID yet, so the first launch is
           blocked. Run this once — or open <b>System Settings → Privacy &amp;
           Security</b> and click <b>Open Anyway</b>.</p>
         <div class="cmd">
-          <code id="xattr">xattr -dr com.apple.quarantine /Applications/Metiri.app</code>
+          <code id="xattr">xattr -dr com.apple.quarantine /Applications/Distanser.app</code>
           <button data-copy="xattr">Copy</button>
         </div>
       </div>
     </div>
   </div>
-  <p class="outro">That’s it — Metiri appears with floating rulers and a dedicated Controls window.</p>
+  <p class="outro">That’s it — Distanser appears with floating rulers and a dedicated Controls window.</p>
 
 
   <h2>What it does</h2>

@@ -13,4 +13,4 @@ jobs:
       - name: Build universal app
         run: ./build.sh
       - name: Check architectures
-        run: lipo -archs build/Ruler.app/Contents/MacOS/Ruler
+        run: lipo -archs build/Distanser.app/Contents/MacOS/Distanser

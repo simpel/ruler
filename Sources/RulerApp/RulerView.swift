@@ -493,11 +493,11 @@ final class RulerView: NSView {
 
         menu.addItem(.separator())
 
-        let settings = NSMenuItem(title: "Metiri Controls…", action: #selector(showSettings), keyEquivalent: ",")
+        let settings = NSMenuItem(title: "Distanser Controls…", action: #selector(showSettings), keyEquivalent: ",")
         settings.target = self
         menu.addItem(settings)
 
-        let quit = NSMenuItem(title: "Quit Metiri", action: #selector(quitApp), keyEquivalent: "q")
+        let quit = NSMenuItem(title: "Quit Distanser", action: #selector(quitApp), keyEquivalent: "q")
         quit.target = self
         menu.addItem(quit)
 

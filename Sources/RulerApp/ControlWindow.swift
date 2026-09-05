@@ -40,7 +40,7 @@ final class ControlWindowController: NSObject, NSWindowDelegate {
                          backing: .buffered,
                          defer: false)
         w.appearance = NSAppearance(named: .darkAqua)
-        w.title = "Metiri Controls"
+        w.title = "Distanser Controls"
         w.titleVisibility = .hidden
         w.titlebarAppearsTransparent = true
         w.isReleasedWhenClosed = false
@@ -124,7 +124,7 @@ private final class ControlContentView: NSView {
     private let textPrimary = NSColor(calibratedWhite: 0.98, alpha: 1.0)         // #FAFAFA (16.5:1 contrast)
     private let textSection = Palette.guideLine                                  // #F5B942 drafting amber (11:1 contrast)
 
-    private let titleLabel = NSTextField(labelWithString: "Metiri Controls")
+    private let titleLabel = NSTextField(labelWithString: "Distanser Controls")
 
     // Toggles
     private let checkHorizontal = NSButton(checkboxWithTitle: "Horizontal Ruler", target: nil, action: nil)
@@ -149,7 +149,7 @@ private final class ControlContentView: NSView {
     private let btnResetZeros = PaddedButton(title: "Reset Zeros", fontSize: 12)
     private let btnClear = PaddedButton(title: "Clear Measurements", fontSize: 12)
     private let btnClearGuides = PaddedButton(title: "Clear Guides", fontSize: 12)
-    private let btnQuit = PaddedButton(title: "Quit Metiri", isDestructive: false, fontSize: 12)
+    private let btnQuit = PaddedButton(title: "Quit Distanser", isDestructive: false, fontSize: 12)
     private let authorLink = NSButton()
 
     private var isSyncing = false

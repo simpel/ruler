@@ -30,7 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func buildStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "ruler", accessibilityDescription: "Ruler")
+            button.image = NSImage(systemSymbolName: "ruler", accessibilityDescription: "Distanser")
             button.image?.isTemplate = true
         }
         statusItem.menu = buildMenu()
@@ -94,9 +94,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         itemLaunchAtLogin = add(to: menu, "Launch at Login", #selector(toggleLaunchAtLogin))
 
         menu.addItem(.separator())
-        _ = add(to: menu, "Metiri Controls…", #selector(showSettings), key: ",")
-        _ = add(to: menu, "Metiri Help…", #selector(showHelp), key: "?")
-        _ = add(to: menu, "Quit Metiri", #selector(quit), key: "q")
+        _ = add(to: menu, "Distanser Controls…", #selector(showSettings), key: ",")
+        _ = add(to: menu, "Distanser Help…", #selector(showHelp), key: "?")
+        _ = add(to: menu, "Quit Distanser", #selector(quit), key: "q")
         return menu
     }
 
@@ -172,7 +172,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         } catch {
             let alert = NSAlert()
             alert.messageText = "Could not change the login item"
-            alert.informativeText = "\(error.localizedDescription)\n\nMoving Ruler to your Applications folder usually fixes this."
+            alert.informativeText = "\(error.localizedDescription)\n\nMoving Distanser to your Applications folder usually fixes this."
             alert.alertStyle = .warning
             NSApp.activate(ignoringOtherApps: true)
             alert.runModal()

@@ -1,6 +1,6 @@
-<img src="docs/icon.png" width="120" alt="Ruler icon" align="right">
+<img src="docs/icon.png" width="120" alt="Distanser icon" align="right">
 
-# Ruler
+# Distanser
 
 **[www.joelsanden.se/ruler](https://www.joelsanden.se/ruler/)**
 
@@ -15,27 +15,27 @@ needed.
 
 ## Install
 
-[**Download Ruler.dmg**](https://github.com/simpel/ruler/releases/latest/download/Ruler.dmg)
-and drag Ruler into your Applications folder.
+[**Download Distanser.dmg**](https://github.com/simpel/ruler/releases/latest/download/Distanser.dmg)
+and drag Distanser into your Applications folder.
 
 Or with Homebrew:
 
 ```bash
-brew install --cask simpel/tap/ruler
+brew install --cask simpel/tap/distanser
 ```
 
-Either way, Ruler is not signed with an Apple Developer ID, so macOS
+Either way, Distanser is not signed with an Apple Developer ID, so macOS
 quarantines it — Homebrew always applies the quarantine flag too. Clear it once
 after installing:
 
 ```bash
-xattr -dr com.apple.quarantine /Applications/Ruler.app
+xattr -dr com.apple.quarantine /Applications/Distanser.app
 ```
 
 Or open the app once from **System Settings → Privacy & Security → Open
 Anyway**.
 
-Turn on **Launch at Login** in Ruler's menu if you want it to start with your
+Turn on **Launch at Login** in Distanser's menu if you want it to start with your
 session.
 
 ## Build from source
@@ -53,9 +53,9 @@ icon in the menu bar.
 | Script | What it does |
 | --- | --- |
 | `./run.sh` | Fast native build, then relaunch |
-| `./build.sh` | Universal build (arm64 + x86_64) into `build/Ruler.app` |
+| `./build.sh` | Universal build (arm64 + x86_64) into `build/Distanser.app` |
 | `./build.sh --fast` | Native architecture only |
-| `./package.sh` | Universal build plus `build/dist/Ruler-<version>.{dmg,zip}` |
+| `./package.sh` | Universal build plus `build/dist/Distanser-<version>.{dmg,zip}` |
 
 The icon is generated from `Tools/make-icon.swift` and cached as
 `Resources/AppIcon.icns`; edit the script and rebuild to change it.
@@ -93,7 +93,7 @@ its readout, so you can measure several things at once. Dismiss one with its ✕
 or all of them with **Clear All Measurements** in the menu. They are not kept
 across launches.
 
-Because Ruler never intercepts your clicks (see Notes), the app underneath also
+Because Distanser never intercepts your clicks (see Notes), the app underneath also
 receives the shift-drag — in a text editor that means it will extend a
 selection. If that gets in the way, switch **Measure Gesture** in the menu to
 ⇧⌘-drag or ⌥⌘-drag.
@@ -123,7 +123,7 @@ ruler's body above the corner, the vertical ruler's body to its left — so both
 zero marks land on exactly the same pixel. Double-click or right-click a ruler
 to move its zero somewhere else.
 
-The cursor line tracks the pointer over any app, whether or not Ruler is
+The cursor line tracks the pointer over any app, whether or not Distanser is
 frontmost. The horizontal ruler reads the pointer's X, the vertical ruler its Y —
 so the two badges together give you the pointer's position relative to each
 ruler's zero. Positions, lengths, and zero marks are remembered between launches.
@@ -137,16 +137,16 @@ ruler's zero. Positions, lengths, and zero marks are remembered between launches
 - **Opacity** — 100% down to 30%, for seeing through the ruler
 - **Click-Through (ignore mouse)** — the rulers and guides stop swallowing clicks; lines keep tracking, but you can no longer drag them (turn it off to move them again)
 - **Reset Position & Size**, **Reset Zero Marks**
-- **Ruler Settings…** — a compact window to adjust rulers, units, opacity and gestures (⌘,)
-- **Ruler Help…** — a window listing every gesture and option
-- **Quit Ruler** (⌘Q)
+- **Distanser Controls…** — a compact window to adjust rulers, units, opacity and gestures (⌘,)
+- **Distanser Help…** — a window listing every gesture and option
+- **Quit Distanser** (⌘Q)
 
 ## Notes
 
 - No accessibility or screen-recording permission needed: pointer position,
   pressed buttons and held modifiers all come from polling (`NSEvent.mouseLocation`,
   `NSEvent.pressedMouseButtons`, `NSEvent.modifierFlags`) at 60 Hz, not from an
-  event tap. The upside is that Ruler never steals a click from another app; the
+  event tap. The upside is that Distanser never steals a click from another app; the
   trade-off is that the app under the pointer also sees your measuring drag.
 - The crosshair is made of two 1pt screen-spanning windows that are simply moved,
   rather than a full-screen view redrawn 60 times a second.
@@ -166,11 +166,11 @@ Sources/RulerApp/
   RulerView.swift           Tick/label/cursor drawing, drag + resize + zero + guide pull
   ControlWindow.swift       Settings and controls window (close, minimize)
   Overlays.swift            Crosshair hairlines and the measurement overlay
-  HelpWindow.swift          The Ruler Help window
+  HelpWindow.swift          The Distanser Help window
   Guides.swift              Fixed guide windows, dragging and persistence
   Settings.swift            UserDefaults-backed options and geometry
 Resources/Info.plist        Bundle plist (LSUIElement = true)
-build.sh / run.sh           Assemble and launch build/Ruler.app
+build.sh / run.sh           Assemble and launch build/Distanser.app
 ```
 
 ## License

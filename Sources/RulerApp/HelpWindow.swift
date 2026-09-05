@@ -26,7 +26,7 @@ final class HelpWindowController {
                               styleMask: [.titled, .closable, .miniaturizable, .resizable],
                               backing: .buffered,
                               defer: false)
-        window.title = "Ruler Help"
+        window.title = "Distanser Help"
         window.isReleasedWhenClosed = false
         window.minSize = NSSize(width: 380, height: 320)
         window.level = .normal
@@ -56,7 +56,7 @@ final class HelpWindowController {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
 
         let out = NSMutableAttributedString()
-        out.append(title("Ruler \(version)"))
+        out.append(title("Distanser \(version)"))
         out.append(body("A screen ruler that floats above every other window. It lives in the menu bar — there is no Dock icon and no main window.\n"))
 
         out.append(heading("The rulers"))
@@ -69,7 +69,7 @@ final class HelpWindowController {
         ]))
 
         out.append(heading("Measuring — \(gesture.title.lowercased())"))
-        out.append(body("Hold the modifier to see the pointer's X and Y. Keep holding it and drag: Ruler draws the line between press and release with the distance in pixels plus the width and height of the drag, and both rulers highlight the span you covered.\n"))
+        out.append(body("Hold the modifier to see the pointer's X and Y. Keep holding it and drag: Distanser draws the line between press and release with the distance in pixels plus the width and height of the drag, and both rulers highlight the span you covered.\n"))
         out.append(items([
             ("Measurements stay", "letting go of the mouse leaves the measurement on screen, so you can measure several things at once"),
             ("Dismiss one", "click the ✕ on its readout badge"),
@@ -77,7 +77,7 @@ final class HelpWindowController {
         ]))
         out.append(items([
             ("Change the gesture", "Measure Gesture in the menu — shift, ⇧⌘ or ⌥⌘"),
-            ("Note", "Ruler never swallows clicks, so the app under the pointer also receives the drag. Switch to ⌥⌘ if that gets in the way."),
+            ("Note", "Distanser never swallows clicks, so the app under the pointer also receives the drag. Switch to ⌥⌘ if that gets in the way."),
         ]))
 
         out.append(heading("Marklines and guides"))

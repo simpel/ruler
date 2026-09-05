@@ -26,7 +26,7 @@ cd "$(dirname "$0")"
 
 VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Resources/Info.plist)
 BUILD=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" Resources/Info.plist)
-APP="build/appstore/Ruler.app"
+APP="build/appstore/Distanser.app"
 DIST="build/dist"
 
 # Regenerate the icon whenever its source is newer than the .icns (same as build.sh).
@@ -49,7 +49,7 @@ cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 cp Resources/PrivacyInfo.xcprivacy "$APP/Contents/Resources/PrivacyInfo.xcprivacy"
 cp "$APPSTORE_PROFILE" "$APP/Contents/embedded.provisionprofile"
-lipo -create -output "$APP/Contents/MacOS/Ruler" \
+lipo -create -output "$APP/Contents/MacOS/Distanser" \
   ".build/release/RulerApp" ".build-${OTHER_ARCH}/release/RulerApp"
 printf 'APPL????' > "$APP/Contents/PkgInfo"
 
@@ -78,10 +78,11 @@ codesign --verify --deep --strict "$APP"
 spctl --assess --type execute "$APP" 2>&1 || true   # informational; MAS apps aren't Gatekeeper-checked this way
 
 mkdir -p "$DIST"
-PKG="$DIST/Ruler-$VERSION-appstore.pkg"
+PKG="$DIST/Distanser-$VERSION-appstore.pkg"
 echo "Packaging $PKG..."
 productbuild --component "$APP" /Applications --sign "$APPSTORE_INSTALLER_IDENTITY" "$PKG"
 xattr -c "$PKG" 2>/dev/null || true
+ln -sf "Distanser-$VERSION-appstore.pkg" "$DIST/Ruler-$VERSION-appstore.pkg"
 
 echo
 if [ ! -f Resources/AppStoreIcon-1024.png ] || [ Tools/make-icon.swift -nt Resources/AppStoreIcon-1024.png ]; then

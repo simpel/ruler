@@ -17,20 +17,20 @@ jobs:
         run: ./package.sh
 
       - name: Verify the app is universal
-        run: lipo -archs build/Ruler.app/Contents/MacOS/Ruler | tee /dev/stderr | grep -q "arm64" && lipo -archs build/Ruler.app/Contents/MacOS/Ruler | grep -q "x86_64"
+        run: lipo -archs build/Distanser.app/Contents/MacOS/Distanser | tee /dev/stderr | grep -q "arm64" && lipo -archs build/Distanser.app/Contents/MacOS/Distanser | grep -q "x86_64"
 
       - name: Publish release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release create "$GITHUB_REF_NAME" build/dist/* \
-            --title "Ruler $GITHUB_REF_NAME" \
+            --title "Distanser $GITHUB_REF_NAME" \
             --notes-file - <<'NOTES'
           Unsigned build — macOS quarantines apps downloaded from the internet.
-          After dragging Ruler to Applications, open it once via
+          After dragging Distanser to Applications, open it once via
           **System Settings → Privacy & Security → Open Anyway**, or run:
 
-              xattr -dr com.apple.quarantine /Applications/Ruler.app
+              xattr -dr com.apple.quarantine /Applications/Distanser.app
 
           NOTES
 

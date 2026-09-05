@@ -10,18 +10,20 @@ DIST="build/dist"
 rm -rf "$DIST"
 mkdir -p "$DIST"
 
-ditto -c -k --keepParent build/Ruler.app "$DIST/Ruler-$VERSION.zip"
+ditto -c -k --keepParent build/Distanser.app "$DIST/Distanser-$VERSION.zip"
+ln -sf "Distanser-$VERSION.zip" "$DIST/Ruler-$VERSION.zip"
 
 STAGE=$(mktemp -d)
-cp -R build/Ruler.app "$STAGE/Ruler.app"
+cp -R build/Distanser.app "$STAGE/Distanser.app"
 ln -s /Applications "$STAGE/Applications"
-hdiutil create -volname "Ruler $VERSION" -srcfolder "$STAGE" -ov -format UDZO \
-  "$DIST/Ruler-$VERSION.dmg" >/dev/null
+hdiutil create -volname "Distanser $VERSION" -srcfolder "$STAGE" -ov -format UDZO \
+  "$DIST/Distanser-$VERSION.dmg" >/dev/null
 rm -rf "$STAGE"
 
-# An unversioned copy so the site can link a stable direct-download URL:
-# https://github.com/<repo>/releases/latest/download/Ruler.dmg
-cp "$DIST/Ruler-$VERSION.dmg" "$DIST/Ruler.dmg"
+# Stable direct-download URLs
+cp "$DIST/Distanser-$VERSION.dmg" "$DIST/Distanser.dmg"
+ln -sf "Distanser-$VERSION.dmg" "$DIST/Ruler-$VERSION.dmg"
+ln -sf "Distanser.dmg" "$DIST/Ruler.dmg"
 
 echo "Packaged:"
 ls -lh "$DIST" | tail -n +2
