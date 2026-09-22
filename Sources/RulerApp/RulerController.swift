@@ -136,7 +136,7 @@ final class RulerController {
 
     private func tick() {
         let mouse = NSEvent.mouseLocation
-        let armed = Settings.shared.measureModifier.matches(NSEvent.modifierFlags)
+        let armed = Settings.shared.isMeasureArmed(NSEvent.modifierFlags)
         let buttonDown = NSEvent.pressedMouseButtons & 1 != 0
 
         let idle = mouse == lastMouse && armed == wasArmed && buttonDown == wasButtonDown
@@ -171,11 +171,23 @@ final class RulerController {
         }
     }
 
+    private func constrainSquareOrCircle(anchor: NSPoint, current: NSPoint) -> NSPoint {
+        let dx = current.x - anchor.x
+        let dy = current.y - anchor.y
+        let side = max(abs(dx), abs(dy))
+        let signX: CGFloat = dx >= 0 ? 1 : -1
+        let signY: CGFloat = dy >= 0 ? 1 : -1
+        return NSPoint(x: anchor.x + signX * side, y: anchor.y + signY * side)
+    }
+
     private func updateMeasurement(_ mouse: NSPoint, armed: Bool, buttonDown: Bool) {
+        let flags = NSEvent.modifierFlags
+        let constrainRatio = flags.contains(.shift)
+
         // Releasing the button keeps the measurement on screen as its own window,
         // so several things can be measured at once.
         if wasButtonDown && !buttonDown, let a = measureAnchor {
-            MeasurementStore.shared.add(anchor: a, current: measureCurrent)
+            MeasurementStore.shared.add(anchor: a, current: measureCurrent, shapeType: Settings.shared.drawShapeType)
             measureAnchor = nil
             measureOverlay.hide()
             setMeasureSpans(nil, nil)
@@ -186,8 +198,8 @@ final class RulerController {
             if buttonDown && !wasButtonDown {
                 measureAnchor = mouse          // gesture starts on the press
             }
-            if buttonDown, measureAnchor != nil {
-                measureCurrent = mouse
+            if buttonDown, let a = measureAnchor {
+                measureCurrent = constrainRatio ? constrainSquareOrCircle(anchor: a, current: mouse) : mouse
             }
         } else if !(buttonDown && measureAnchor != nil) {
             // Not armed and not mid-drag: nothing to show.
@@ -198,14 +210,18 @@ final class RulerController {
             }
             return
         } else {
-            measureCurrent = mouse             // keep a drag alive if the modifier is let go
+            // Keep a drag alive if the modifier is let go
+            if let a = measureAnchor {
+                measureCurrent = constrainRatio ? constrainSquareOrCircle(anchor: a, current: mouse) : mouse
+            }
         }
 
         let scr = screen(containing: mouse)
         measureOverlay.show(anchor: measureAnchor,
                             current: measureAnchor == nil ? mouse : measureCurrent,
                             scale: unitsPerPoint(on: scr),
-                            screen: scr)
+                            screen: scr,
+                            shapeType: Settings.shared.drawShapeType)
 
         if let a = measureAnchor {
             setMeasureSpans(a, measureCurrent)

@@ -14,8 +14,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var itemClickThrough: NSMenuItem!
     private var itemCrosshair: NSMenuItem!
     private var itemLaunchAtLogin: NSMenuItem!
+    private var itemDrawRect: NSMenuItem!
+    private var itemDrawCircle: NSMenuItem!
     private var opacityItems: [NSMenuItem] = []
-    private var measureItems: [NSMenuItem] = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         buildStatusItem()
@@ -55,15 +56,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         guidesItem.submenu = guides
         menu.addItem(guidesItem)
 
-        let measure = NSMenu()
-        for modifier in MeasureModifier.allCases {
-            let item = add(to: measure, modifier.title, #selector(setMeasureModifier(_:)))
-            item.representedObject = NSNumber(value: modifier.rawValue)
-            measureItems.append(item)
-        }
-        let measureItem = NSMenuItem(title: "Measure Gesture", action: nil, keyEquivalent: "")
-        measureItem.submenu = measure
-        menu.addItem(measureItem)
+        let shapes = NSMenu()
+        itemDrawRect = add(to: shapes, "Draw Rectangles", #selector(setDrawRectangle), key: "4")
+        itemDrawCircle = add(to: shapes, "Draw Circles", #selector(setDrawCircle), key: "5")
+        shapes.addItem(.separator())
+        _ = add(to: shapes, "Clear All Shapes", #selector(clearMeasurements))
+        let shapesItem = NSMenuItem(title: "Shapes", action: nil, keyEquivalent: "")
+        shapesItem.submenu = shapes
+        menu.addItem(shapesItem)
 
         menu.addItem(.separator())
 
@@ -117,10 +117,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         itemClickThrough.state = s.clickThrough ? .on : .off
         itemCrosshair.state = s.crosshairEnabled ? .on : .off
         itemLaunchAtLogin.state = SMAppService.mainApp.status == .enabled ? .on : .off
-        for item in measureItems {
-            let raw = (item.representedObject as? NSNumber)?.intValue ?? 0
-            item.state = raw == s.measureModifier.rawValue ? .on : .off
-        }
+        itemDrawRect.state = s.drawShapeType == .rectangle ? .on : .off
+        itemDrawCircle.state = s.drawShapeType == .circle ? .on : .off
         for item in opacityItems {
             let value = (item.representedObject as? NSNumber)?.doubleValue ?? 1
             item.state = abs(value - s.opacity) < 0.001 ? .on : .off
@@ -135,12 +133,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc private func useDevicePixels() { Settings.shared.devicePixels = true }
     @objc private func toggleClickThrough() { Settings.shared.clickThrough.toggle() }
     @objc private func toggleCrosshair() { Settings.shared.crosshairEnabled.toggle() }
-
-    @objc private func setMeasureModifier(_ sender: NSMenuItem) {
-        guard let n = sender.representedObject as? NSNumber,
-              let modifier = MeasureModifier(rawValue: n.intValue) else { return }
-        Settings.shared.measureModifier = modifier
-    }
+    @objc private func setDrawRectangle() { Settings.shared.drawShapeType = .rectangle }
+    @objc private func setDrawCircle() { Settings.shared.drawShapeType = .circle }
 
     @objc private func addHorizontalGuide() { controller.addGuideAtPointer(orientation: .horizontal) }
     @objc private func addVerticalGuide() { controller.addGuideAtPointer(orientation: .vertical) }

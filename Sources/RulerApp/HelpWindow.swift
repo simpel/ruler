@@ -52,7 +52,6 @@ final class HelpWindowController {
     // MARK: - Content
 
     private func makeContent() -> NSAttributedString {
-        let gesture = Settings.shared.measureModifier
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
 
         let out = NSMutableAttributedString()
@@ -68,16 +67,17 @@ final class HelpWindowController {
             ("Move the pointer", "a red line and a pixel readout follow it on both rulers"),
         ]))
 
-        out.append(heading("Measuring — \(gesture.title.lowercased())"))
-        out.append(body("Hold the modifier to see the pointer's X and Y. Keep holding it and drag: Distanser draws the line between press and release with the distance in pixels plus the width and height of the drag, and both rulers highlight the span you covered.\n"))
+        out.append(heading("Shapes & Measuring — ⌘-drag"))
+        out.append(body("Hold Command (⌘) and drag to draw the selected shape (rectangle or circle). Hold Command + Shift (⌘⇧) to constrain to a 1:1 ratio (perfect square or perfect circle). The tooltip displays screen X/Y, width/height, and for circles, radius and circumference.\n"))
         out.append(items([
-            ("Measurements stay", "letting go of the mouse leaves the measurement on screen, so you can measure several things at once"),
+            ("Shape modes", "switch between Rectangle (⌘4) and Circle (⌘5) in the Shapes menu or Controls"),
+            ("1:1 ratio lock", "hold Shift while drawing with Command to constrain to a perfect square or circle"),
+            ("Draggable tooltips", "drag the readout badge or outline to move the shape anywhere on screen"),
+            ("Set values", "click the sliders icon on any shape's tooltip to open a dialog and set exact position and dimensions"),
+            ("Shapes stay", "letting go of the mouse leaves the shape on screen, so you can place several at once"),
             ("Dismiss one", "click the ✕ on its readout badge"),
-            ("Dismiss all", "Clear All Measurements in the menu"),
-        ]))
-        out.append(items([
-            ("Change the gesture", "Measure Gesture in the menu — shift, ⇧⌘ or ⌥⌘"),
-            ("Note", "Distanser never swallows clicks, so the app under the pointer also receives the drag. Switch to ⌥⌘ if that gets in the way."),
+            ("Dismiss all", "Clear All Shapes in the menu or Controls"),
+            ("Note", "Distanser keeps shape interiors click-through so apps underneath still work. Drag via the badge tooltip or outline to reposition."),
         ]))
 
         out.append(heading("Marklines and guides"))

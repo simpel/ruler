@@ -35,7 +35,7 @@ final class ControlWindowController: NSObject, NSWindowDelegate {
     }
 
     private func makeWindow() -> NSWindow {
-        let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 320, height: 545),
+        let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 320, height: 520),
                          styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],
                          backing: .buffered,
                          defer: false)
@@ -64,54 +64,6 @@ final class ControlWindowController: NSObject, NSWindowDelegate {
     }
 }
 
-// MARK: - Padded Button
-
-/// A custom dark button with generous vertical inline padding and active click feedback.
-private final class PaddedButton: NSButton {
-
-    private let normalBg = NSColor(calibratedWhite: 0.22, alpha: 0.9)
-    private let highlightBg = NSColor(calibratedWhite: 0.35, alpha: 0.9)
-    private let normalBorder = NSColor(calibratedWhite: 0.38, alpha: 0.7)
-    private let isDestructive: Bool
-
-    init(title: String, isDestructive: Bool = false, fontSize: CGFloat = 12) {
-        self.isDestructive = isDestructive
-        super.init(frame: .zero)
-        self.title = title
-        isBordered = false
-        wantsLayer = true
-        layer?.cornerRadius = 6
-        layer?.borderWidth = 1
-        layer?.borderColor = isDestructive
-            ? NSColor(calibratedRed: 0.8, green: 0.25, blue: 0.25, alpha: 0.6).cgColor
-            : normalBorder.cgColor
-        layer?.backgroundColor = isDestructive
-            ? NSColor(calibratedRed: 0.5, green: 0.15, blue: 0.15, alpha: 0.35).cgColor
-            : normalBg.cgColor
-
-        let p = NSMutableParagraphStyle()
-        p.alignment = .center
-        attributedTitle = NSAttributedString(string: title, attributes: [
-            .font: NSFont.systemFont(ofSize: fontSize, weight: .medium),
-            .foregroundColor: NSColor(calibratedWhite: 0.98, alpha: 1.0),
-            .paragraphStyle: p,
-        ])
-    }
-
-    required init?(coder: NSCoder) { fatalError("not supported") }
-
-    override func highlight(_ flag: Bool) {
-        super.highlight(flag)
-        if isDestructive {
-            layer?.backgroundColor = flag
-                ? NSColor(calibratedRed: 0.65, green: 0.2, blue: 0.2, alpha: 0.5).cgColor
-                : NSColor(calibratedRed: 0.5, green: 0.15, blue: 0.15, alpha: 0.35).cgColor
-        } else {
-            layer?.backgroundColor = flag ? highlightBg.cgColor : normalBg.cgColor
-        }
-    }
-}
-
 // MARK: - Content View (Charcoal Dark HUD)
 
 private final class ControlContentView: NSView {
@@ -126,6 +78,9 @@ private final class ControlContentView: NSView {
 
     private let titleLabel = NSTextField(labelWithString: "Distanser Controls")
 
+    // Shapes
+    private let shapeSection = ShapeControlSection()
+
     // Toggles
     private let checkHorizontal = NSButton(checkboxWithTitle: "Horizontal Ruler", target: nil, action: nil)
     private let checkVertical = NSButton(checkboxWithTitle: "Vertical Ruler", target: nil, action: nil)
@@ -135,10 +90,6 @@ private final class ControlContentView: NSView {
     // Units
     private let unitsSegment = NSSegmentedControl(labels: ["Points", "Device Pixels"],
                                                   trackingMode: .selectOne, target: nil, action: nil)
-
-    // Gesture
-    private let gestureSegment = NSSegmentedControl(labels: ["Shift", "⇧⌘", "⌥⌘"],
-                                                    trackingMode: .selectOne, target: nil, action: nil)
 
     // Opacity
     private let opacityLabel = NSTextField(labelWithString: "100%")
@@ -202,8 +153,6 @@ private final class ControlContentView: NSView {
 
         unitsSegment.controlSize = .regular
         unitsSegment.font = NSFont.systemFont(ofSize: universalFontSize, weight: .regular)
-        gestureSegment.controlSize = .regular
-        gestureSegment.font = NSFont.systemFont(ofSize: universalFontSize, weight: .regular)
         opacitySlider.controlSize = .regular
 
         opacityLabel.font = NSFont.monospacedDigitSystemFont(ofSize: universalFontSize, weight: .medium)
@@ -258,11 +207,10 @@ private final class ControlContentView: NSView {
         unitsSegment.widthAnchor.constraint(equalToConstant: 284).isActive = true
         rootStack.addArrangedSubview(unitsSegment)
 
-        // Measure Gesture
-        rootStack.addArrangedSubview(makeSection("MEASURE GESTURE"))
-        gestureSegment.translatesAutoresizingMaskIntoConstraints = false
-        gestureSegment.widthAnchor.constraint(equalToConstant: 284).isActive = true
-        rootStack.addArrangedSubview(gestureSegment)
+        // Shapes (draw mode & hints)
+        shapeSection.translatesAutoresizingMaskIntoConstraints = false
+        shapeSection.widthAnchor.constraint(equalToConstant: 284).isActive = true
+        rootStack.addArrangedSubview(shapeSection)
 
         // Opacity
         let opHeader = NSStackView(views: [makeSection("OPACITY"), opacityLabel])
@@ -349,9 +297,6 @@ private final class ControlContentView: NSView {
         unitsSegment.target = self
         unitsSegment.action = #selector(onUnitsChanged)
 
-        gestureSegment.target = self
-        gestureSegment.action = #selector(onGestureChanged)
-
         opacitySlider.target = self
         opacitySlider.action = #selector(onOpacityChanged)
 
@@ -386,7 +331,7 @@ private final class ControlContentView: NSView {
         checkClickThrough.state = s.clickThrough ? .on : .off
 
         unitsSegment.selectedSegment = s.devicePixels ? 1 : 0
-        gestureSegment.selectedSegment = s.measureModifier.rawValue
+        shapeSection.syncWithSettings()
         opacitySlider.doubleValue = s.opacity
         opacityLabel.stringValue = "\(Int(s.opacity * 100))%"
     }
@@ -409,12 +354,6 @@ private final class ControlContentView: NSView {
 
     @objc private func onUnitsChanged() {
         Settings.shared.devicePixels = unitsSegment.selectedSegment == 1
-    }
-
-    @objc private func onGestureChanged() {
-        if let modifier = MeasureModifier(rawValue: gestureSegment.selectedSegment) {
-            Settings.shared.measureModifier = modifier
-        }
     }
 
     @objc private func onOpacityChanged() {

@@ -5,35 +5,6 @@ enum RulerAxis {
     case vertical
 }
 
-/// Modifier combination that arms the click-and-drag measuring gesture.
-enum MeasureModifier: Int, CaseIterable {
-    case shift = 0
-    case shiftCommand = 1
-    case optionCommand = 2
-
-    var flags: NSEvent.ModifierFlags {
-        switch self {
-        case .shift: return [.shift]
-        case .shiftCommand: return [.shift, .command]
-        case .optionCommand: return [.option, .command]
-        }
-    }
-
-    var title: String {
-        switch self {
-        case .shift: return "Shift-Drag"
-        case .shiftCommand: return "Shift-Command-Drag"
-        case .optionCommand: return "Option-Command-Drag"
-        }
-    }
-
-    /// True when exactly this combination is held (ignoring caps lock etc.).
-    func matches(_ held: NSEvent.ModifierFlags) -> Bool {
-        let relevant: NSEvent.ModifierFlags = [.shift, .control, .option, .command]
-        return held.intersection(relevant) == flags
-    }
-}
-
 extension Notification.Name {
     static let rulerSettingsChanged = Notification.Name("RulerSettingsChanged")
 }
@@ -53,7 +24,7 @@ final class Settings {
             Key.opacity: 1.0,
             Key.clickThrough: false,
             Key.crosshair: true,
-            Key.measureModifier: 0,
+            Key.drawShapeType: ShapeType.rectangle.rawValue,
         ])
     }
 
@@ -64,7 +35,7 @@ final class Settings {
         static let opacity = "opacity"
         static let clickThrough = "clickThrough"
         static let crosshair = "crosshair"
-        static let measureModifier = "measureModifier"
+        static let drawShapeType = "drawShapeType"
         static let guides = "guides"
         static let frame = "frame."
         static let zero = "zero."
@@ -98,7 +69,7 @@ final class Settings {
         let legacyDomains = ["com.github.simpel.ruler", "local.joelsanden.RulerApp"]
         let keys = [Key.showHorizontal, Key.showVertical, Key.devicePixels,
                     Key.opacity, Key.clickThrough, Key.crosshair,
-                    Key.measureModifier, Key.guides,
+                    Key.guides,
                     Key.frame + "h", Key.frame + "v", Key.zero + "h", Key.zero + "v"]
 
         for domain in legacyDomains {
@@ -127,9 +98,19 @@ final class Settings {
         set { defaults.set(newValue, forKey: Key.crosshair); changed() }
     }
 
-    var measureModifier: MeasureModifier {
-        get { MeasureModifier(rawValue: defaults.integer(forKey: Key.measureModifier)) ?? .shift }
-        set { defaults.set(newValue.rawValue, forKey: Key.measureModifier); changed() }
+    /// True when the Command-drag gesture to start drawing/measuring is held.
+    /// Shift can also be held concurrently to constrain to a 1:1 ratio.
+    func isMeasureArmed(_ flags: NSEvent.ModifierFlags) -> Bool {
+        flags.contains(.command) && !flags.contains(.control) && !flags.contains(.option)
+    }
+
+    var drawShapeType: ShapeType {
+        get {
+            guard let raw = defaults.string(forKey: Key.drawShapeType),
+                  let type = ShapeType(rawValue: raw) else { return .rectangle }
+            return type
+        }
+        set { defaults.set(newValue.rawValue, forKey: Key.drawShapeType); changed() }
     }
 
     /// Fixed guides, encoded as "h|x|y".
