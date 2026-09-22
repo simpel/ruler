@@ -20,16 +20,31 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 # Auto-detect identities from keychain if not set, or fall back to known defaults
+KEYCHAIN_TARGET="${KEYCHAIN_PATH:-}"
 if [ -z "${APPSTORE_SIGN_IDENTITY:-}" ]; then
-  APPSTORE_SIGN_IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep -E "Apple Distribution|3rd Party Mac Developer Application" | head -n 1 | sed -E 's/.*"([^"]+)".*/\1/' || true)
+  if [ -n "$KEYCHAIN_TARGET" ]; then
+    APPSTORE_SIGN_IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN_TARGET" 2>/dev/null | grep -E "Apple Distribution|3rd Party Mac Developer Application" | head -n 1 | sed -E 's/.*"([^"]+)".*/\1/' || true)
+  else
+    APPSTORE_SIGN_IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep -E "Apple Distribution|3rd Party Mac Developer Application" | head -n 1 | sed -E 's/.*"([^"]+)".*/\1/' || true)
+  fi
   if [ -z "$APPSTORE_SIGN_IDENTITY" ]; then
     APPSTORE_SIGN_IDENTITY="511BE9DE277D67F7EFD3B135EE3046032A9AB9A6"
   fi
 fi
 
 if [ -z "${APPSTORE_INSTALLER_IDENTITY:-}" ]; then
-  APPSTORE_INSTALLER_IDENTITY=$(security find-identity -v 2>/dev/null | grep -E "3rd Party Mac Developer Installer|Mac Installer Distribution" | head -n 1 | sed -E 's/.*"([^"]+)".*/\1/' || true)
+  if [ -n "$KEYCHAIN_TARGET" ]; then
+    APPSTORE_INSTALLER_IDENTITY=$(security find-identity -v "$KEYCHAIN_TARGET" 2>/dev/null | grep -E "3rd Party Mac Developer Installer|Mac Installer Distribution" | head -n 1 | sed -E 's/.*"([^"]+)".*/\1/' || true)
+  else
+    APPSTORE_INSTALLER_IDENTITY=$(security find-identity -v 2>/dev/null | grep -E "3rd Party Mac Developer Installer|Mac Installer Distribution" | head -n 1 | sed -E 's/.*"([^"]+)".*/\1/' || true)
+  fi
   if [ -z "$APPSTORE_INSTALLER_IDENTITY" ]; then
+    if [ -n "$KEYCHAIN_TARGET" ]; then
+      echo "error: No Mac Installer certificate found in runner keychain ($KEYCHAIN_TARGET)." >&2
+      echo "Submitting a .pkg to the Mac App Store requires both an Apple Distribution certificate AND a Mac Installer Distribution certificate." >&2
+      echo "Please add INSTALLER_CERTIFICATE_BASE64 to repository secrets (or export both certs together in BUILD_CERTIFICATE_BASE64). See CI.md." >&2
+      exit 1
+    fi
     APPSTORE_INSTALLER_IDENTITY="3rd Party Mac Developer Installer: Joel Sanden (D4F66LSYSF)"
   fi
 fi
@@ -104,7 +119,11 @@ spctl --assess --type execute "$APP" 2>&1 || true   # informational; MAS apps ar
 mkdir -p "$DIST"
 PKG="$DIST/Distanser-$VERSION-appstore.pkg"
 echo "Packaging $PKG..."
-productbuild --component "$APP" /Applications --sign "$APPSTORE_INSTALLER_IDENTITY" "$PKG"
+KEYCHAIN_ARGS=()
+if [ -n "$KEYCHAIN_TARGET" ]; then
+  KEYCHAIN_ARGS=(--keychain "$KEYCHAIN_TARGET")
+fi
+productbuild "${KEYCHAIN_ARGS[@]}" --component "$APP" /Applications --sign "$APPSTORE_INSTALLER_IDENTITY" "$PKG"
 xattr -c "$PKG" 2>/dev/null || true
 ln -sf "Distanser-$VERSION-appstore.pkg" "$DIST/Ruler-$VERSION-appstore.pkg"
 

@@ -64,9 +64,11 @@ jobs:
             security import "$INSTALLER_CERT_PATH" -P "$INST_PWD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
           fi
 
-          security set-key-partition-list -S apple-tool:,apple:,codesign:,productbuild: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security default-keychain -s "$KEYCHAIN_PATH"
           security list-keychains -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | tr -d '"')
+
+          echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
 
           echo "Available code-signing identities in runner keychain:"
           security find-identity -v "$KEYCHAIN_PATH"
@@ -97,13 +99,15 @@ jobs:
           chmod 600 ~/.appstoreconnect/private_keys/AuthKey_${API_KEY_ID}.p8 ~/.private_keys/AuthKey_${API_KEY_ID}.p8
 
       - name: Build & Package for Mac App Store
+        env:
+          KEYCHAIN_PATH: ${{ env.KEYCHAIN_PATH }}
         run: |
           # Guarantee build number is monotonically increasing beyond historical submissions (>7)
-          BUILD_NUMBER=$(( 100 + github.run_number ))
+          BUILD_NUMBER=$(( 100 + ${{ github.run_number }} ))
           echo "Setting dynamic build number: $BUILD_NUMBER"
           echo "BUILD_NUMBER=$BUILD_NUMBER" >> "$GITHUB_ENV"
 
-          BUILD_NUMBER="$BUILD_NUMBER" ./package-appstore.sh
+          BUILD_NUMBER="$BUILD_NUMBER" KEYCHAIN_PATH="$KEYCHAIN_PATH" ./package-appstore.sh
 
           PKG_PATH=$(ls build/dist/Distanser-*-appstore.pkg | head -n 1)
           echo "Discovered package: $PKG_PATH"
