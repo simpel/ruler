@@ -9,8 +9,10 @@ signed and notarizable. Nothing here changes that pipeline.
 The engineering side is done — [Ruler.entitlements](Resources/Ruler.entitlements),
 [PrivacyInfo.xcprivacy](Resources/PrivacyInfo.xcprivacy) and
 [package-appstore.sh](package-appstore.sh) are in the repo and the app has been
-verified to run correctly fully sandboxed (see below). What's left is portal
-work only an Apple Developer Program member can do.
+verified to run correctly fully sandboxed (see below).
+
+For automated delivery on push to `main` via GitHub Actions, see [CI.md](CI.md).
+Below are the one-time Apple account setup steps and the manual fallback packaging process.
 
 ## Why nothing had to change in the app
 

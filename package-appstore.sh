@@ -19,8 +19,21 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-: "${APPSTORE_SIGN_IDENTITY:=511BE9DE277D67F7EFD3B135EE3046032A9AB9A6}"
-: "${APPSTORE_INSTALLER_IDENTITY:=3rd Party Mac Developer Installer: Joel Sanden (D4F66LSYSF)}"
+# Auto-detect identities from keychain if not set, or fall back to known defaults
+if [ -z "${APPSTORE_SIGN_IDENTITY:-}" ]; then
+  APPSTORE_SIGN_IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep -E "Apple Distribution|3rd Party Mac Developer Application" | head -n 1 | sed -E 's/.*"([^"]+)".*/\1/' || true)
+  if [ -z "$APPSTORE_SIGN_IDENTITY" ]; then
+    APPSTORE_SIGN_IDENTITY="511BE9DE277D67F7EFD3B135EE3046032A9AB9A6"
+  fi
+fi
+
+if [ -z "${APPSTORE_INSTALLER_IDENTITY:-}" ]; then
+  APPSTORE_INSTALLER_IDENTITY=$(security find-identity -v 2>/dev/null | grep -E "3rd Party Mac Developer Installer|Mac Installer Distribution" | head -n 1 | sed -E 's/.*"([^"]+)".*/\1/' || true)
+  if [ -z "$APPSTORE_INSTALLER_IDENTITY" ]; then
+    APPSTORE_INSTALLER_IDENTITY="3rd Party Mac Developer Installer: Joel Sanden (D4F66LSYSF)"
+  fi
+fi
+
 if [ -z "${APPSTORE_PROFILE:-}" ]; then
   if [ -f "Resources/Distanser_MAS.provisionprofile" ]; then
     APPSTORE_PROFILE="Resources/Distanser_MAS.provisionprofile"
@@ -29,13 +42,13 @@ if [ -z "${APPSTORE_PROFILE:-}" ]; then
   elif [ -f "$HOME/Downloads/Ruler_MAS.provisionprofile" ]; then
     APPSTORE_PROFILE="$HOME/Downloads/Ruler_MAS.provisionprofile"
   else
-    APPSTORE_PROFILE="$HOME/Downloads/Distanser_MAS.provisionprofile"
+    APPSTORE_PROFILE="Resources/Distanser_MAS.provisionprofile"
   fi
 fi
 [ -f "$APPSTORE_PROFILE" ] || { echo "error: provisioning profile not found at $APPSTORE_PROFILE" >&2; exit 1; }
 
 VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Resources/Info.plist)
-BUILD=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" Resources/Info.plist)
+BUILD=${BUILD_NUMBER:-$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" Resources/Info.plist)}
 APP="build/appstore/Distanser.app"
 DIST="build/dist"
 
@@ -56,6 +69,7 @@ swift build -c release \
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 cp Resources/PrivacyInfo.xcprivacy "$APP/Contents/Resources/PrivacyInfo.xcprivacy"
 cp "$APPSTORE_PROFILE" "$APP/Contents/embedded.provisionprofile"
