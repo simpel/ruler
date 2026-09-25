@@ -85,6 +85,7 @@ final class HelpWindowController {
         out.append(heading("Marklines and guides"))
         out.append(items([
             ("Crosshair", "two screen-wide hairlines follow the pointer — toggle with Crosshair Follows Pointer"),
+            ("⌥-click on screen", "place both horizontal and vertical cross markers at that position"),
             ("⌥-drag off a ruler", "pull out a fixed amber guide, running parallel to that ruler"),
             ("Right-click a ruler", "Add Cross Guide Here — a guide crossing it at the clicked value"),
             ("Drag a guide", "move it; its badge sits at the screen edge and shows its position on the matching ruler"),
@@ -94,9 +95,8 @@ final class HelpWindowController {
         ]))
         out.append(body("Guides are remembered between launches.\n"))
 
-        out.append(heading("Units, look and layout"))
+        out.append(heading("Look and layout"))
         out.append(items([
-            ("Units", "Points are the logical pixels CSS and design tools use. Device Pixels are physical Retina pixels — twice as many on this display."),
             ("Opacity", "100% down to 30%"),
             ("Click-Through", "rulers and guides stop taking clicks, so you can work underneath them. The lines keep tracking, but you cannot drag them until you switch it off."),
             ("Reset Position & Size", "lays the rulers out as an L so both zero marks sit on exactly the same pixel"),
@@ -105,7 +105,7 @@ final class HelpWindowController {
 
         out.append(heading("Good to know"))
         out.append(items([
-            ("Controls window", "Ruler Controls lets you toggle rulers, units, gestures and opacity. Close or minimize it at any time, or reopen it with ⌘,"),
+            ("Controls window", "Ruler Controls lets you toggle rulers, opacity, and shapes. Close or minimize it at any time, or reopen it with ⌘,"),
             ("No permissions", "pointer, buttons and modifiers are polled 60 times a second rather than tapped, so Ruler needs no accessibility or screen-recording access."),
             ("Always on top", "the rulers join every Space and stay above full-screen windows."),
             ("Launch at Login", "toggle it in the menu — macOS starts Ruler with your session."),

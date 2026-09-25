@@ -19,6 +19,11 @@ final class RulerController {
     private var lastMouse: NSPoint = .zero
 
     private(set) var isContextActive: Bool = false
+    private var lastFocusState: Bool = false
+
+    var isAppInFocus: Bool {
+        isContextActive || NSApp.isActive
+    }
 
     var panels: [RulerPanel] { [horizontal, vertical] }
 
@@ -29,6 +34,7 @@ final class RulerController {
             panel.rulerView.isContextActive = true
         }
         DrawingCanvasManager.shared.show()
+        updateCrosshairOpacity()
         NotificationCenter.default.post(name: .rulerContextChanged, object: nil)
     }
 
@@ -40,6 +46,7 @@ final class RulerController {
         }
         DrawingCanvasManager.shared.hide()
         clearLiveMeasurement()
+        updateCrosshairOpacity()
         NotificationCenter.default.post(name: .rulerContextChanged, object: nil)
     }
 
@@ -59,8 +66,12 @@ final class RulerController {
                                                name: NSApplication.didChangeScreenParametersNotification,
                                                object: nil)
         NotificationCenter.default.addObserver(self,
-                                               selector: #selector(applicationDidResignActive),
+                                               selector: #selector(applicationStateChanged),
                                                name: NSApplication.didResignActiveNotification,
+                                               object: nil)
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(applicationStateChanged),
+                                               name: NSApplication.didBecomeActiveNotification,
                                                object: nil)
 
         // Polling gives us pointer position, buttons and modifiers without an
@@ -74,8 +85,11 @@ final class RulerController {
         timer = t
     }
 
-    @objc private func applicationDidResignActive() {
-        deactivateContext()
+    @objc private func applicationStateChanged() {
+        if !NSApp.isActive {
+            deactivateContext()
+        }
+        updateCrosshairOpacity()
     }
 
     // MARK: - Settings
@@ -92,13 +106,22 @@ final class RulerController {
             panel.rulerView.needsDisplay = true
         }
 
-        for hair in [crosshairH, crosshairV] {
-            hair.alphaValue = CGFloat(s.opacity)
-            if !s.crosshairEnabled { hair.orderOut(nil) }
-        }
+        updateCrosshairOpacity()
 
         GuideManager.shared.applySettings()
         MeasurementStore.shared.applySettings()
+    }
+
+    /// When crosshairs are enabled, lines render at 100% of user opacity while in focus
+    /// and dim to 50% opacity when the app is not in focus.
+    func updateCrosshairOpacity() {
+        let s = Settings.shared
+        let baseOpacity = CGFloat(s.opacity)
+        let alpha = isAppInFocus ? baseOpacity : (baseOpacity * 0.5)
+        for hair in [crosshairH, crosshairV] {
+            hair.setLineOpacity(alpha)
+            if !s.crosshairEnabled { hair.orderOut(nil) }
+        }
     }
 
     @objc private func screensChanged() {
@@ -163,6 +186,12 @@ final class RulerController {
 
     private func tick() {
         let mouse = NSEvent.mouseLocation
+        let focus = isAppInFocus
+
+        if focus != lastFocusState {
+            lastFocusState = focus
+            updateCrosshairOpacity()
+        }
 
         let idle = mouse == lastMouse
         defer {

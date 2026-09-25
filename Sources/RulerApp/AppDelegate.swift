@@ -9,19 +9,59 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // Items whose checkmarks are refreshed when the menu opens.
     private var itemHorizontal: NSMenuItem!
     private var itemVertical: NSMenuItem!
-    private var itemPoints: NSMenuItem!
-    private var itemDevicePixels: NSMenuItem!
     private var itemClickThrough: NSMenuItem!
     private var itemCrosshair: NSMenuItem!
     private var itemLaunchAtLogin: NSMenuItem!
     private var itemDrawRect: NSMenuItem!
     private var itemDrawCircle: NSMenuItem!
     private var opacityItems: [NSMenuItem] = []
+    private var keyMonitor: Any?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         buildStatusItem()
+        setupMainMenu()
+        setupKeyMonitor()
         controller.start()
         ControlWindowController.shared.show()
+    }
+
+    private func setupMainMenu() {
+        let mainMenu = NSMenu()
+        let appMenuItem = NSMenuItem()
+        mainMenu.addItem(appMenuItem)
+
+        let appMenu = NSMenu()
+        _ = add(to: appMenu, "About Distanser", #selector(showHelp))
+        appMenu.addItem(.separator())
+        _ = add(to: appMenu, "Distanser Controls…", #selector(showSettings), key: ",")
+        appMenu.addItem(.separator())
+        _ = add(to: appMenu, "Quit Distanser", #selector(quit), key: "q")
+        appMenuItem.submenu = appMenu
+
+        NSApp.mainMenu = mainMenu
+    }
+
+    private func setupKeyMonitor() {
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard event.modifierFlags.contains(.command) else { return event }
+            guard let char = event.charactersIgnoringModifiers?.lowercased() else { return event }
+
+            if char == "q" {
+                self?.quit()
+                return nil
+            }
+            if char == "w" {
+                if let keyWindow = NSApp.keyWindow, keyWindow.isVisible {
+                    keyWindow.performClose(nil)
+                    return nil
+                }
+            }
+            if char == "," {
+                self?.showSettings()
+                return nil
+            }
+            return event
+        }
     }
 
     func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool { true }
@@ -67,13 +107,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         menu.addItem(.separator())
 
-        let units = NSMenu()
-        itemPoints = add(to: units, "Points (logical pixels)", #selector(usePoints))
-        itemDevicePixels = add(to: units, "Device Pixels (Retina)", #selector(useDevicePixels))
-        let unitsItem = NSMenuItem(title: "Units", action: nil, keyEquivalent: "")
-        unitsItem.submenu = units
-        menu.addItem(unitsItem)
-
         let opacity = NSMenu()
         for value in [1.0, 0.85, 0.7, 0.5, 0.3] {
             let item = add(to: opacity, "\(Int(value * 100))%", #selector(setOpacity(_:)))
@@ -112,8 +145,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let s = Settings.shared
         itemHorizontal.state = s.showHorizontal ? .on : .off
         itemVertical.state = s.showVertical ? .on : .off
-        itemPoints.state = s.devicePixels ? .off : .on
-        itemDevicePixels.state = s.devicePixels ? .on : .off
         itemClickThrough.state = s.clickThrough ? .on : .off
         itemCrosshair.state = s.crosshairEnabled ? .on : .off
         itemLaunchAtLogin.state = SMAppService.mainApp.status == .enabled ? .on : .off
@@ -129,8 +160,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func toggleHorizontal() { Settings.shared.showHorizontal.toggle() }
     @objc private func toggleVertical() { Settings.shared.showVertical.toggle() }
-    @objc private func usePoints() { Settings.shared.devicePixels = false }
-    @objc private func useDevicePixels() { Settings.shared.devicePixels = true }
     @objc private func toggleClickThrough() { Settings.shared.clickThrough.toggle() }
     @objc private func toggleCrosshair() { Settings.shared.crosshairEnabled.toggle() }
     @objc private func setDrawRectangle() {

@@ -30,6 +30,7 @@ final class ControlWindowController: NSObject, NSWindowDelegate {
     func toggle() {
         if let w = window, w.isVisible {
             w.orderOut(nil)
+            RulerController.shared.deactivateContext()
         } else {
             show()
         }
@@ -39,8 +40,12 @@ final class ControlWindowController: NSObject, NSWindowDelegate {
         RulerController.shared.activateContext()
     }
 
+    func windowDidResignKey(_ notification: Notification) {
+        RulerController.shared.deactivateContext()
+    }
+
     private func makeWindow() -> NSWindow {
-        let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 320, height: 550),
+        let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 320, height: 600),
                          styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],
                          backing: .buffered,
                          defer: false)
@@ -66,6 +71,7 @@ final class ControlWindowController: NSObject, NSWindowDelegate {
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         sender.orderOut(nil)
+        RulerController.shared.deactivateContext()
         return false
     }
 }
@@ -84,18 +90,15 @@ private final class ControlContentView: NSView {
 
     private let titleLabel = NSTextField(labelWithString: "Distanser Controls")
 
-    // Shapes
+    // Shapes & Commands
     private let shapeSection = ShapeControlSection()
+    private let commandsSection = CommandsSection()
 
     // Toggles
     private let checkHorizontal = NSButton(checkboxWithTitle: "Horizontal Ruler", target: nil, action: nil)
     private let checkVertical = NSButton(checkboxWithTitle: "Vertical Ruler", target: nil, action: nil)
     private let checkCrosshair = NSButton(checkboxWithTitle: "Crosshair", target: nil, action: nil)
     private let checkClickThrough = NSButton(checkboxWithTitle: "Click-Through", target: nil, action: nil)
-
-    // Units
-    private let unitsSegment = NSSegmentedControl(labels: ["Points", "Device Pixels"],
-                                                  trackingMode: .selectOne, target: nil, action: nil)
 
     // Opacity
     private let opacityLabel = NSTextField(labelWithString: "100%")
@@ -157,8 +160,6 @@ private final class ControlContentView: NSView {
             ])
         }
 
-        unitsSegment.controlSize = .regular
-        unitsSegment.font = NSFont.systemFont(ofSize: universalFontSize, weight: .regular)
         opacitySlider.controlSize = .regular
 
         opacityLabel.font = NSFont.monospacedDigitSystemFont(ofSize: universalFontSize, weight: .medium)
@@ -207,16 +208,15 @@ private final class ControlContentView: NSView {
         rootStack.addArrangedSubview(rulerRow)
         rootStack.addArrangedSubview(optRow)
 
-        // Units
-        rootStack.addArrangedSubview(makeSection("UNITS"))
-        unitsSegment.translatesAutoresizingMaskIntoConstraints = false
-        unitsSegment.widthAnchor.constraint(equalToConstant: 284).isActive = true
-        rootStack.addArrangedSubview(unitsSegment)
-
-        // Shapes (draw mode & hints)
+        // Shapes (draw mode)
         shapeSection.translatesAutoresizingMaskIntoConstraints = false
         shapeSection.widthAnchor.constraint(equalToConstant: 284).isActive = true
         rootStack.addArrangedSubview(shapeSection)
+
+        // Commands & Gestures
+        commandsSection.translatesAutoresizingMaskIntoConstraints = false
+        commandsSection.widthAnchor.constraint(equalToConstant: 284).isActive = true
+        rootStack.addArrangedSubview(commandsSection)
 
         // Opacity
         let opHeader = NSStackView(views: [makeSection("OPACITY"), opacityLabel])
@@ -300,9 +300,6 @@ private final class ControlContentView: NSView {
         checkClickThrough.target = self
         checkClickThrough.action = #selector(onToggleClickThrough)
 
-        unitsSegment.target = self
-        unitsSegment.action = #selector(onUnitsChanged)
-
         opacitySlider.target = self
         opacitySlider.action = #selector(onOpacityChanged)
 
@@ -336,7 +333,6 @@ private final class ControlContentView: NSView {
         checkCrosshair.state = s.crosshairEnabled ? .on : .off
         checkClickThrough.state = s.clickThrough ? .on : .off
 
-        unitsSegment.selectedSegment = s.devicePixels ? 1 : 0
         shapeSection.syncWithSettings()
         opacitySlider.doubleValue = s.opacity
         opacityLabel.stringValue = "\(Int(s.opacity * 100))%"
@@ -356,10 +352,6 @@ private final class ControlContentView: NSView {
 
     @objc private func onToggleClickThrough() {
         Settings.shared.clickThrough = checkClickThrough.state == .on
-    }
-
-    @objc private func onUnitsChanged() {
-        Settings.shared.devicePixels = unitsSegment.selectedSegment == 1
     }
 
     @objc private func onOpacityChanged() {

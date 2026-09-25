@@ -52,12 +52,8 @@ final class Settings {
         set { defaults.set(newValue, forKey: Key.showVertical); changed() }
     }
 
-    /// When true, readouts are in physical device pixels (2× on Retina)
-    /// instead of logical points (what CSS/design tools call pixels).
-    var devicePixels: Bool {
-        get { defaults.bool(forKey: Key.devicePixels) }
-        set { defaults.set(newValue, forKey: Key.devicePixels); changed() }
-    }
+    /// Units setting removed; always operates in logical points (1:1 with CSS and design tools).
+    var devicePixels: Bool { false }
 
     /// The bundle identifier has changed twice since Ruler first shipped;
     /// bring settings from every prior domain along on first launch, most

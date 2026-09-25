@@ -162,9 +162,15 @@ final class DrawingCanvasView: NSView {
             }
             RulerController.shared.clearLiveMeasurement()
         } else {
-            // Clicking on the screen means "leaving" the app context.
             RulerController.shared.clearLiveMeasurement()
-            RulerController.shared.deactivateContext()
+            if event.modifierFlags.contains(.option), let point = start {
+                // Option-click places cross markers (both horizontal and vertical guides)
+                GuideManager.shared.add(orientation: .horizontal, at: point)
+                GuideManager.shared.add(orientation: .vertical, at: point)
+            } else {
+                // Clicking on the screen without modifiers means "leaving" the app context.
+                RulerController.shared.deactivateContext()
+            }
         }
     }
 
