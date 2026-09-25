@@ -1,6 +1,6 @@
 cask "distanser" do
   version "1.4.0"
-  sha256 "6254c66917352814d43fde52ca55a9a29d4e35bb03f26608128ad59e794e575b"
+  sha256 "2f831472ebe75ad68a4b681d00c82794516e65ebad1e2b8d3c5e218bbce89fcd"
 
   url "https://github.com/simpel/ruler/releases/download/v#{version}/Distanser-#{version}.dmg"
   name "Distanser"
