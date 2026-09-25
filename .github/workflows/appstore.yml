@@ -127,10 +127,19 @@ jobs:
           API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
         run: |
           echo "Uploading $PKG_PATH to App Store Connect..."
-          xcrun altool --upload-package "$PKG_PATH" \
+          set +e
+          UPLOAD_OUTPUT=$(xcrun altool --upload-package "$PKG_PATH" \
             --type macos \
             --apiKey "$API_KEY_ID" \
-            --apiIssuer "$API_ISSUER_ID"
+            --apiIssuer "$API_ISSUER_ID" 2>&1)
+          UPLOAD_STATUS=$?
+          set -e
+          echo "$UPLOAD_OUTPUT"
+
+          if [ $UPLOAD_STATUS -ne 0 ] || echo "$UPLOAD_OUTPUT" | grep -E -qi "(Validation failed|Failed to upload package|STATE_ERROR)"; then
+            echo "::error::Upload to App Store Connect failed!" >&2
+            exit 1
+          fi
 
       - name: Clean up temporary keychain and credentials
         if: always()
