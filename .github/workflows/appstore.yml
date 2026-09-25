@@ -77,16 +77,15 @@ jobs:
         env:
           BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.BUILD_PROVISION_PROFILE_BASE64 }}
         run: |
-          if [ -n "$BUILD_PROVISION_PROFILE_BASE64" ]; then
+          if [ -f "Resources/Distanser_MAS.provisionprofile" ]; then
+            echo "Using committed Resources/Distanser_MAS.provisionprofile..."
+          elif [ -n "$BUILD_PROVISION_PROFILE_BASE64" ]; then
             echo "Installing provisioning profile from BUILD_PROVISION_PROFILE_BASE64 secret..."
             echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o "Resources/Distanser_MAS.provisionprofile"
           else
-            echo "Using committed Resources/Distanser_MAS.provisionprofile..."
-          fi
-          test -f "Resources/Distanser_MAS.provisionprofile" || {
             echo "error: Resources/Distanser_MAS.provisionprofile not found" >&2
             exit 1
-          }
+          fi
 
       - name: Set up App Store Connect API Key
         env:
