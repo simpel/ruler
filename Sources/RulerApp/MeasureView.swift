@@ -55,6 +55,15 @@ final class MeasureView: NSView {
 
     override var isOpaque: Bool { false }
 
+    /// Computes the exact perimeter/circumference of an ellipse (or circle) using Ramanujan's formula.
+    static func ellipseCircumference(width: CGFloat, height: CGFloat) -> CGFloat {
+        let a = width / 2.0
+        let b = height / 2.0
+        guard a > 0 || b > 0 else { return 0 }
+        let h = pow(a - b, 2) / max(0.0001, pow(a + b, 2))
+        return CGFloat.pi * (a + b) * (1.0 + (3.0 * h) / (10.0 + sqrt(4.0 - 3.0 * h)))
+    }
+
     func isOverOutline(_ localPoint: NSPoint) -> Bool {
         shapeType.isPointOnOutline(localPoint, in: shapeBox)
     }
@@ -168,7 +177,7 @@ final class MeasureView: NSView {
         let width = box.width * scale
         let height = box.height * scale
         let radius = (width + height) / 4.0
-        let circumference = 2.0 * CGFloat.pi * radius
+        let circumference = MeasureView.ellipseCircumference(width: width, height: height)
 
         let layout = ReadoutBadge.draw(shapeType: .circle,
                                        showsActions: showsClose,
@@ -314,21 +323,58 @@ final class MeasureView: NSView {
                     newCurrent.y = minY
                 }
             case .radius:
-                let origRadius = (origWidth + origHeight) / 4.0
+                let origRadius = max(1, (origWidth + origHeight) / 4.0)
                 let newRadius = max(3, origRadius + delta)
+                let s = newRadius / origRadius
+                let newW = max(5, origWidth * s)
+                let newH = max(5, origHeight * s)
                 let midX = (anchor.x + current.x) / 2.0
                 let midY = (anchor.y + current.y) / 2.0
-                newAnchor = NSPoint(x: (midX - newRadius).rounded(), y: (midY - newRadius).rounded())
-                newCurrent = NSPoint(x: (midX + newRadius).rounded(), y: (midY + newRadius).rounded())
+                let halfW = newW / 2.0
+                let halfH = newH / 2.0
+
+                if current.x >= anchor.x {
+                    newAnchor.x = (midX - halfW).rounded()
+                    newCurrent.x = (midX + halfW).rounded()
+                } else {
+                    newAnchor.x = (midX + halfW).rounded()
+                    newCurrent.x = (midX - halfW).rounded()
+                }
+
+                if current.y >= anchor.y {
+                    newAnchor.y = (midY - halfH).rounded()
+                    newCurrent.y = (midY + halfH).rounded()
+                } else {
+                    newAnchor.y = (midY + halfH).rounded()
+                    newCurrent.y = (midY - halfH).rounded()
+                }
+
             case .circumference:
-                let origRadius = (origWidth + origHeight) / 4.0
-                let origCirc = 2.0 * CGFloat.pi * origRadius
+                let origCirc = max(1, MeasureView.ellipseCircumference(width: origWidth, height: origHeight))
                 let newCirc = max(18, origCirc + delta)
-                let newRadius = newCirc / (2.0 * CGFloat.pi)
+                let s = newCirc / origCirc
+                let newW = max(5, origWidth * s)
+                let newH = max(5, origHeight * s)
                 let midX = (anchor.x + current.x) / 2.0
                 let midY = (anchor.y + current.y) / 2.0
-                newAnchor = NSPoint(x: (midX - newRadius).rounded(), y: (midY - newRadius).rounded())
-                newCurrent = NSPoint(x: (midX + newRadius).rounded(), y: (midY + newRadius).rounded())
+                let halfW = newW / 2.0
+                let halfH = newH / 2.0
+
+                if current.x >= anchor.x {
+                    newAnchor.x = (midX - halfW).rounded()
+                    newCurrent.x = (midX + halfW).rounded()
+                } else {
+                    newAnchor.x = (midX + halfW).rounded()
+                    newCurrent.x = (midX - halfW).rounded()
+                }
+
+                if current.y >= anchor.y {
+                    newAnchor.y = (midY - halfH).rounded()
+                    newCurrent.y = (midY + halfH).rounded()
+                } else {
+                    newAnchor.y = (midY + halfH).rounded()
+                    newCurrent.y = (midY - halfH).rounded()
+                }
             case .x:
                 newAnchor.x = anchor.x + delta
                 newCurrent.x = current.x + delta

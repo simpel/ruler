@@ -243,8 +243,28 @@ final class ShapeEditDialogController: NSObject, NSWindowDelegate {
     }
 
     private func scrub(field: NSTextField, delta: CGFloat) {
+        if field === rField {
+            let currentW = max(5, Double(wField.stringValue) ?? 100)
+            let currentH = max(5, Double(hField.stringValue) ?? 100)
+            let currentR = (currentW + currentH) / 4.0
+            let newR = max(3, currentR + delta)
+            let s = newR / max(1, currentR)
+
+            let newW = max(5, (currentW * s).rounded())
+            let newH = max(5, (currentH * s).rounded())
+
+            isSyncingFields = true
+            rField.stringValue = "\(Int(newR.rounded()))"
+            wField.stringValue = "\(Int(newW))"
+            hField.stringValue = "\(Int(newH))"
+            isSyncingFields = false
+
+            applyLive()
+            return
+        }
+
         let currentVal = Double(field.stringValue) ?? 0
-        let isDim = (field === wField || field === hField || field === rField)
+        let isDim = (field === wField || field === hField)
         let newVal = isDim ? max(5, currentVal + delta) : currentVal + delta
         field.stringValue = "\(Int(newVal.rounded()))"
 
@@ -258,18 +278,21 @@ final class ShapeEditDialogController: NSObject, NSWindowDelegate {
         defer { isSyncingFields = false }
 
         if field === rField {
-            let r = Double(rField.stringValue) ?? 50
-            let d = r * 2
-            wField.stringValue = "\(Int(d.rounded()))"
-            hField.stringValue = "\(Int(d.rounded()))"
-        } else if field === wField {
+            let currentW = max(5, Double(wField.stringValue) ?? 100)
+            let currentH = max(5, Double(hField.stringValue) ?? 100)
+            let currentR = (currentW + currentH) / 4.0
+            let newR = max(3, Double(rField.stringValue) ?? currentR)
+            if currentR > 0 {
+                let s = newR / currentR
+                let newW = max(5, (currentW * s).rounded())
+                let newH = max(5, (currentH * s).rounded())
+                wField.stringValue = "\(Int(newW))"
+                hField.stringValue = "\(Int(newH))"
+            }
+        } else if field === wField || field === hField {
             let w = Double(wField.stringValue) ?? 100
-            hField.stringValue = "\(Int(w.rounded()))"
-            rField.stringValue = "\(Int((w / 2.0).rounded()))"
-        } else if field === hField {
             let h = Double(hField.stringValue) ?? 100
-            wField.stringValue = "\(Int(h.rounded()))"
-            rField.stringValue = "\(Int((h / 2.0).rounded()))"
+            rField.stringValue = "\(Int(((w + h) / 4.0).rounded()))"
         }
     }
 
