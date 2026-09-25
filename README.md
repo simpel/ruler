@@ -65,7 +65,9 @@ To produce a signed, notarizable build, set `CODESIGN_IDENTITY` to a
 notarize the DMG with `xcrun notarytool submit` and staple it.
 
 Pushing a `v*` tag runs `.github/workflows/release.yml`, which builds the
-universal app and publishes the DMG and zip as a GitHub release.
+universal app and publishes the DMG and zip as a GitHub release. Versions follow
+[Semantic Versioning](https://semver.org/) and [Conventional Commits](https://www.conventionalcommits.org/)
+(Semantic Release) — see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 A Mac App Store submission is a separate, sandboxed build — see
 [APP_STORE.md](APP_STORE.md).
@@ -172,6 +174,11 @@ Sources/RulerApp/
 Resources/Info.plist        Bundle plist (LSUIElement = true)
 build.sh / run.sh           Assemble and launch build/Distanser.app
 ```
+
+## Contributing
+
+We use **Semantic Release** and **Conventional Commits** to automate versioning and changelogs.
+Please check out [CONTRIBUTING.md](CONTRIBUTING.md) for commit conventions, breaking change rules, and release instructions.
 
 ## License
 

@@ -38,6 +38,41 @@ final class GuideManager {
         save()
     }
 
+    /// Finds guides within `threshold` points of a given screen coordinate.
+    /// If both horizontal and vertical guides are near `point` (e.g. at a cross marker intersection),
+    /// the closest guide for each orientation is returned.
+    func guidesNear(point: NSPoint, threshold: CGFloat = 12) -> [GuideWindow] {
+        var result: [GuideWindow] = []
+
+        let hGuides = guides.filter { g in
+            guard g.orientation == .horizontal else { return false }
+            let f = g.frame
+            let inBoundsX = point.x >= f.minX - threshold && point.x <= f.maxX + threshold
+            return inBoundsX && abs(g.position - point.y) <= threshold
+        }
+        .map { (guide: $0, dist: abs($0.position - point.y)) }
+        .sorted { $0.dist < $1.dist }
+
+        if let closestH = hGuides.first {
+            result.append(closestH.guide)
+        }
+
+        let vGuides = guides.filter { g in
+            guard g.orientation == .vertical else { return false }
+            let f = g.frame
+            let inBoundsY = point.y >= f.minY - threshold && point.y <= f.maxY + threshold
+            return inBoundsY && abs(g.position - point.x) <= threshold
+        }
+        .map { (guide: $0, dist: abs($0.position - point.x)) }
+        .sorted { $0.dist < $1.dist }
+
+        if let closestV = vGuides.first {
+            result.append(closestV.guide)
+        }
+
+        return result
+    }
+
     func clear() {
         guides.forEach { $0.teardown() }
         guides.removeAll()

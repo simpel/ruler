@@ -20,45 +20,33 @@ final class CommandsSection: NSView {
         return label
     }
 
-    private func makeKeyBadge(_ text: String) -> NSView {
+    private func makeSubgroupLabel(_ text: String) -> NSTextField {
         let label = NSTextField(labelWithString: text)
-        label.font = NSFont.monospacedSystemFont(ofSize: 10, weight: .medium)
-        label.textColor = NSColor(calibratedWhite: 0.95, alpha: 1.0)
-        label.alignment = .center
-
-        let badge = NSView()
-        badge.wantsLayer = true
-        badge.layer?.backgroundColor = NSColor(calibratedWhite: 0.22, alpha: 0.85).cgColor
-        badge.layer?.borderColor = NSColor(calibratedWhite: 0.38, alpha: 0.7).cgColor
-        badge.layer?.borderWidth = 1
-        badge.layer?.cornerRadius = 4
-
-        label.translatesAutoresizingMaskIntoConstraints = false
-        badge.addSubview(label)
-
-        NSLayoutConstraint.activate([
-            label.centerXAnchor.constraint(equalTo: badge.centerXAnchor),
-            label.centerYAnchor.constraint(equalTo: badge.centerYAnchor),
-            badge.widthAnchor.constraint(equalToConstant: 76),
-            badge.heightAnchor.constraint(equalToConstant: 18),
-        ])
-        return badge
+        label.font = NSFont.systemFont(ofSize: 10, weight: .bold)
+        label.textColor = NSColor(calibratedWhite: 0.55, alpha: 1.0)
+        return label
     }
 
-    private func makeRow(badgeText: String, description: String) -> NSView {
+    private func makeRow(gesture: String, description: String) -> NSView {
         let row = NSStackView()
         row.orientation = .horizontal
-        row.alignment = .centerY
-        row.spacing = 8
+        row.alignment = .firstBaseline
+        row.spacing = 10
         row.translatesAutoresizingMaskIntoConstraints = false
 
-        let badge = makeKeyBadge(badgeText)
+        let gestureLabel = NSTextField(labelWithString: gesture)
+        gestureLabel.font = NSFont.systemFont(ofSize: 11, weight: .semibold)
+        gestureLabel.textColor = NSColor(calibratedWhite: 0.94, alpha: 1.0)
+        gestureLabel.alignment = .left
+        gestureLabel.translatesAutoresizingMaskIntoConstraints = false
+        gestureLabel.widthAnchor.constraint(equalToConstant: 82).isActive = true
+
         let descLabel = NSTextField(labelWithString: description)
         descLabel.font = NSFont.systemFont(ofSize: 11, weight: .regular)
-        descLabel.textColor = NSColor(calibratedWhite: 0.72, alpha: 1.0)
+        descLabel.textColor = NSColor(calibratedWhite: 0.70, alpha: 1.0)
         descLabel.lineBreakMode = .byTruncatingTail
 
-        row.addArrangedSubview(badge)
+        row.addArrangedSubview(gestureLabel)
         row.addArrangedSubview(descLabel)
         return row
     }
@@ -67,7 +55,7 @@ final class CommandsSection: NSView {
         let stack = NSStackView()
         stack.orientation = .vertical
         stack.alignment = .leading
-        stack.spacing = 6
+        stack.spacing = 4
         stack.translatesAutoresizingMaskIntoConstraints = false
         addSubview(stack)
 
@@ -78,22 +66,54 @@ final class CommandsSection: NSView {
             stack.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
 
-        stack.addArrangedSubview(makeSectionLabel("COMMANDS"))
+        let header = makeSectionLabel("COMMANDS")
+        stack.addArrangedSubview(header)
+        stack.setCustomSpacing(6, after: header)
 
-        let commands: [(String, String)] = [
-            ("Click", "Ruler or settings to focus app & draw"),
+        // 1. Shapes
+        let shapesGroup = makeSubgroupLabel("SHAPES")
+        stack.addArrangedSubview(shapesGroup)
+        stack.setCustomSpacing(3, after: shapesGroup)
+
+        let shapesCommands: [(String, String)] = [
             ("Drag", "Draw shape (hold ⇧ for 1:1)"),
-            ("Drag ⇄", "Scrub number values left / right"),
-            ("2× number", "Open shape settings dialog"),
-            ("⌥-click", "Place cross markers at position"),
-            ("⌥-drag", "Pull out guide from ruler"),
-            ("2× ruler", "Set zero mark on ruler"),
-            ("Esc / Click", "Exit drawing mode"),
+            ("Double-click", "Open shape settings dialog"),
         ]
+        for (gesture, desc) in shapesCommands {
+            stack.addArrangedSubview(makeRow(gesture: gesture, description: desc))
+        }
 
-        for (key, desc) in commands {
-            let row = makeRow(badgeText: key, description: desc)
-            stack.addArrangedSubview(row)
+        if let last = stack.arrangedSubviews.last {
+            stack.setCustomSpacing(8, after: last)
+        }
+
+        // 2. Guides
+        let guidesGroup = makeSubgroupLabel("GUIDES")
+        stack.addArrangedSubview(guidesGroup)
+        stack.setCustomSpacing(3, after: guidesGroup)
+
+        let guidesCommands: [(String, String)] = [
+            ("⌥ Drag", "Pull out guide from ruler"),
+            ("⌥ Click", "Toggle cross marker or guide"),
+        ]
+        for (gesture, desc) in guidesCommands {
+            stack.addArrangedSubview(makeRow(gesture: gesture, description: desc))
+        }
+
+        if let last = stack.arrangedSubviews.last {
+            stack.setCustomSpacing(8, after: last)
+        }
+
+        // 3. Rulers
+        let rulersGroup = makeSubgroupLabel("RULERS")
+        stack.addArrangedSubview(rulersGroup)
+        stack.setCustomSpacing(3, after: rulersGroup)
+
+        let rulersCommands: [(String, String)] = [
+            ("Double-click", "Set zero mark on ruler"),
+        ]
+        for (gesture, desc) in rulersCommands {
+            stack.addArrangedSubview(makeRow(gesture: gesture, description: desc))
         }
     }
 }

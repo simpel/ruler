@@ -332,15 +332,33 @@ extension ShapeEditDialogController: NSTextFieldDelegate {
 private final class ScrubbableLabel: NSTextField {
     var onScrubDelta: ((CGFloat) -> Void)?
     private var startMouseX: CGFloat = 0
+    private var trackingArea: NSTrackingArea?
 
     override func resetCursorRects() {
-        super.resetCursorRects()
-        addCursorRect(bounds, cursor: .resizeLeftRight)
+        discardCursorRects()
+        addCursorRect(bounds, cursor: .horizontalScrub)
+    }
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let trackingArea {
+            removeTrackingArea(trackingArea)
+        }
+        let area = NSTrackingArea(rect: bounds,
+                                  options: [.cursorUpdate, .activeAlways, .inVisibleRect],
+                                  owner: self,
+                                  userInfo: nil)
+        addTrackingArea(area)
+        trackingArea = area
+    }
+
+    override func cursorUpdate(with event: NSEvent) {
+        NSCursor.horizontalScrub.set()
     }
 
     override func mouseDown(with event: NSEvent) {
         startMouseX = NSEvent.mouseLocation.x
-        NSCursor.resizeLeftRight.push()
+        NSCursor.horizontalScrub.push()
         while true {
             guard let nextEvent = window?.nextEvent(matching: [.leftMouseDragged, .leftMouseUp]) else { break }
             if nextEvent.type == .leftMouseUp { break }
@@ -357,11 +375,35 @@ private final class ScrubbableLabel: NSTextField {
 /// An editable text field that supports direct typing or horizontal drag scrubbing.
 private final class ScrubbableField: NSTextField {
     var onScrubDelta: ((CGFloat) -> Void)?
+    private var trackingArea: NSTrackingArea?
 
     override func resetCursorRects() {
-        super.resetCursorRects()
         if currentEditor() == nil {
-            addCursorRect(bounds, cursor: .resizeLeftRight)
+            discardCursorRects()
+            addCursorRect(bounds, cursor: .horizontalScrub)
+        } else {
+            super.resetCursorRects()
+        }
+    }
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let trackingArea {
+            removeTrackingArea(trackingArea)
+        }
+        let area = NSTrackingArea(rect: bounds,
+                                  options: [.cursorUpdate, .activeAlways, .inVisibleRect],
+                                  owner: self,
+                                  userInfo: nil)
+        addTrackingArea(area)
+        trackingArea = area
+    }
+
+    override func cursorUpdate(with event: NSEvent) {
+        if currentEditor() == nil {
+            NSCursor.horizontalScrub.set()
+        } else {
+            super.cursorUpdate(with: event)
         }
     }
 
@@ -383,7 +425,7 @@ private final class ScrubbableField: NSTextField {
             let currentX = NSEvent.mouseLocation.x
             if !hasDragged && abs(currentX - startLocation.x) > 2 {
                 hasDragged = true
-                NSCursor.resizeLeftRight.push()
+                NSCursor.horizontalScrub.push()
                 window?.makeFirstResponder(nil)
             }
             if hasDragged {

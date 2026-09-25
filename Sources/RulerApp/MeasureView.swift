@@ -215,7 +215,7 @@ final class MeasureView: NSView {
             addCursorRect(moveRect, cursor: .openHand)
         }
         for hit in metricHits {
-            addCursorRect(hit.rect, cursor: .resizeLeftRight)
+            addCursorRect(hit.rect, cursor: .horizontalScrub)
         }
         if let badgeRect {
             addCursorRect(badgeRect, cursor: .arrow)
@@ -280,7 +280,7 @@ final class MeasureView: NSView {
         scrubStartMouse = NSEvent.mouseLocation
         scrubStartAnchor = owner.anchor
         scrubStartCurrent = owner.current
-        NSCursor.resizeLeftRight.push()
+        NSCursor.horizontalScrub.push()
         needsDisplay = true
     }
 
