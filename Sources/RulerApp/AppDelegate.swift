@@ -3,7 +3,7 @@ import ServiceManagement
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
-    private let controller = RulerController()
+    private let controller = RulerController.shared
     private var statusItem: NSStatusItem!
 
     // Items whose checkmarks are refreshed when the menu opens.
@@ -133,8 +133,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     @objc private func useDevicePixels() { Settings.shared.devicePixels = true }
     @objc private func toggleClickThrough() { Settings.shared.clickThrough.toggle() }
     @objc private func toggleCrosshair() { Settings.shared.crosshairEnabled.toggle() }
-    @objc private func setDrawRectangle() { Settings.shared.drawShapeType = .rectangle }
-    @objc private func setDrawCircle() { Settings.shared.drawShapeType = .circle }
+    @objc private func setDrawRectangle() {
+        Settings.shared.drawShapeType = .rectangle
+        controller.activateContext()
+    }
+    @objc private func setDrawCircle() {
+        Settings.shared.drawShapeType = .circle
+        controller.activateContext()
+    }
 
     @objc private func addHorizontalGuide() { controller.addGuideAtPointer(orientation: .horizontal) }
     @objc private func addVerticalGuide() { controller.addGuideAtPointer(orientation: .vertical) }

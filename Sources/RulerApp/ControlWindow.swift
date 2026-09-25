@@ -24,6 +24,7 @@ final class ControlWindowController: NSObject, NSWindowDelegate {
         NSApp.activate(ignoringOtherApps: true)
         window?.center()
         window?.makeKeyAndOrderFront(nil)
+        RulerController.shared.activateContext()
     }
 
     func toggle() {
@@ -34,11 +35,16 @@ final class ControlWindowController: NSObject, NSWindowDelegate {
         }
     }
 
+    func windowDidBecomeKey(_ notification: Notification) {
+        RulerController.shared.activateContext()
+    }
+
     private func makeWindow() -> NSWindow {
-        let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 320, height: 520),
+        let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 320, height: 550),
                          styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],
                          backing: .buffered,
                          defer: false)
+        w.level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 5)
         w.appearance = NSAppearance(named: .darkAqua)
         w.title = "Distanser Controls"
         w.titleVisibility = .hidden

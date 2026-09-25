@@ -18,6 +18,10 @@ final class RulerView: NSView {
 
     let axis: RulerAxis
 
+    var isContextActive: Bool = false {
+        didSet { if oldValue != isContextActive { needsDisplay = true } }
+    }
+
     /// Distance (points) from the ruler's start to the cursor, or nil when off-ruler.
     var cursorDistance: CGFloat? {
         didSet { if oldValue != cursorDistance { needsDisplay = true } }
@@ -78,7 +82,8 @@ final class RulerView: NSView {
     override var isOpaque: Bool { false }
 
     override func draw(_ dirtyRect: NSRect) {
-        let ink = Palette.ink
+        let ink = isContextActive ? Palette.ink : Palette.inactiveInk
+        let gradient = isContextActive ? Palette.faceGradient : Palette.inactiveFaceGradient
 
         let shape = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5),
                                 xRadius: cornerRadius, yRadius: cornerRadius)
@@ -90,10 +95,11 @@ final class RulerView: NSView {
         shadow.shadowOffset = NSSize(width: 0, height: -1.5)
         shadow.shadowBlurRadius = 3
         shadow.set()
-        Palette.faceGradient.draw(in: shape, angle: -90)
+        gradient.draw(in: shape, angle: -90)
         NSGraphicsContext.restoreGraphicsState()
 
-        ink.withAlphaComponent(0.3).setStroke()
+        let strokeColor = isContextActive ? ink.withAlphaComponent(0.3) : NSColor(calibratedWhite: 0.35, alpha: 0.3)
+        strokeColor.setStroke()
         shape.lineWidth = 1
         shape.stroke()
 
@@ -106,7 +112,7 @@ final class RulerView: NSView {
         drawTicks(ink: ink)
         drawGrip(ink: ink, highlighted: grabbing)
         if let d = cursorDistance, d >= 0, d <= length {
-            drawCursor(at: d, accent: Palette.live)
+            drawCursor(at: d, accent: isContextActive ? Palette.live : Palette.inactiveLive)
         }
 
         NSGraphicsContext.restoreGraphicsState()
@@ -323,7 +329,7 @@ final class RulerView: NSView {
         let value = Int(displayValue(atDistance: d).rounded())
         let string = NSAttributedString(string: "\(value)", attributes: [
             .font: NSFont.monospacedDigitSystemFont(ofSize: 9, weight: .semibold),
-            .foregroundColor: NSColor.white,
+            .foregroundColor: isContextActive ? NSColor.white : NSColor(calibratedWhite: 0.90, alpha: 1.0),
         ])
         let size = string.size()
         let padX: CGFloat = 4, padY: CGFloat = 1.5
@@ -402,6 +408,7 @@ final class RulerView: NSView {
 
     override func mouseDown(with event: NSEvent) {
         guard let window else { return }
+        RulerController.shared.activateContext()
         let p = convert(event.locationInWindow, from: nil)
 
         if event.clickCount == 2 {
@@ -457,88 +464,5 @@ final class RulerView: NSView {
             pendingGuide = nil
         }
         dragMode = .none
-    }
-
-    override func menu(for event: NSEvent) -> NSMenu? {
-        let p = convert(event.locationInWindow, from: nil)
-        let d = distance(forViewPoint: p)
-        let menu = NSMenu()
-
-        let setZero = NSMenuItem(title: "Set Zero Here", action: #selector(setZeroHere(_:)), keyEquivalent: "")
-        setZero.target = self
-        setZero.representedObject = NSNumber(value: Double(d))
-        menu.addItem(setZero)
-
-        let reset = NSMenuItem(title: "Reset Zero", action: #selector(resetZero(_:)), keyEquivalent: "")
-        reset.target = self
-        menu.addItem(reset)
-
-        menu.addItem(.separator())
-
-        let cross = NSMenuItem(title: "Add Cross Guide Here", action: #selector(addCrossGuide(_:)), keyEquivalent: "")
-        cross.target = self
-        cross.representedObject = NSValue(point: window?.convertPoint(toScreen: event.locationInWindow) ?? .zero)
-        menu.addItem(cross)
-
-        let clear = NSMenuItem(title: "Clear All Guides", action: #selector(clearGuides), keyEquivalent: "")
-        clear.target = self
-        menu.addItem(clear)
-
-        menu.addItem(.separator())
-
-        let hide = NSMenuItem(title: axis == .horizontal ? "Hide Horizontal Ruler" : "Hide Vertical Ruler",
-                              action: #selector(hideRuler(_:)), keyEquivalent: "")
-        hide.target = self
-        menu.addItem(hide)
-
-        menu.addItem(.separator())
-
-        let settings = NSMenuItem(title: "Distanser Controls…", action: #selector(showSettings), keyEquivalent: ",")
-        settings.target = self
-        menu.addItem(settings)
-
-        let quit = NSMenuItem(title: "Quit Distanser", action: #selector(quitApp), keyEquivalent: "q")
-        quit.target = self
-        menu.addItem(quit)
-
-        return menu
-    }
-
-    @objc private func setZeroHere(_ sender: NSMenuItem) {
-        guard let n = sender.representedObject as? NSNumber else { return }
-        Settings.shared.setZeroOffset(CGFloat(n.doubleValue), for: axis)
-        needsDisplay = true
-    }
-
-    @objc private func resetZero(_ sender: Any?) {
-        Settings.shared.setZeroOffset(0, for: axis)
-        needsDisplay = true
-    }
-
-    /// A guide crossing this ruler, marking the value under the click.
-    @objc private func addCrossGuide(_ sender: NSMenuItem) {
-        guard let value = sender.representedObject as? NSValue else { return }
-        GuideManager.shared.add(orientation: axis == .horizontal ? .vertical : .horizontal,
-                                at: value.pointValue)
-    }
-
-    @objc private func clearGuides() {
-        GuideManager.shared.clear()
-    }
-
-    @objc private func hideRuler(_ sender: Any?) {
-        if axis == .horizontal {
-            Settings.shared.showHorizontal = false
-        } else {
-            Settings.shared.showVertical = false
-        }
-    }
-
-    @objc private func showSettings() {
-        ControlWindowController.shared.show()
-    }
-
-    @objc private func quitApp() {
-        NSApp.terminate(nil)
     }
 }

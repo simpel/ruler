@@ -4,6 +4,8 @@ import AppKit
 /// drives them all from one 60 Hz pointer poll.
 final class RulerController {
 
+    static let shared = RulerController()
+
     private let horizontal = RulerPanel(axis: .horizontal)
     private let vertical = RulerPanel(axis: .vertical)
 
@@ -15,14 +17,31 @@ final class RulerController {
 
     // Poll state
     private var lastMouse: NSPoint = .zero
-    private var wasButtonDown = false
-    private var wasArmed = false
 
-    // Measurement state
-    private var measureAnchor: NSPoint?
-    private var measureCurrent: NSPoint = .zero
+    private(set) var isContextActive: Bool = false
 
     var panels: [RulerPanel] { [horizontal, vertical] }
+
+    func activateContext() {
+        guard !isContextActive else { return }
+        isContextActive = true
+        for panel in panels {
+            panel.rulerView.isContextActive = true
+        }
+        DrawingCanvasManager.shared.show()
+        NotificationCenter.default.post(name: .rulerContextChanged, object: nil)
+    }
+
+    func deactivateContext() {
+        guard isContextActive else { return }
+        isContextActive = false
+        for panel in panels {
+            panel.rulerView.isContextActive = false
+        }
+        DrawingCanvasManager.shared.hide()
+        clearLiveMeasurement()
+        NotificationCenter.default.post(name: .rulerContextChanged, object: nil)
+    }
 
     func start() {
         GuideManager.shared.labelProvider = { [weak self] guide in
@@ -39,6 +58,10 @@ final class RulerController {
                                                selector: #selector(screensChanged),
                                                name: NSApplication.didChangeScreenParametersNotification,
                                                object: nil)
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(applicationDidResignActive),
+                                               name: NSApplication.didResignActiveNotification,
+                                               object: nil)
 
         // Polling gives us pointer position, buttons and modifiers without an
         // event tap, so no accessibility permission is needed and we never
@@ -49,6 +72,10 @@ final class RulerController {
         t.tolerance = 1.0 / 120.0
         RunLoop.main.add(t, forMode: .common)
         timer = t
+    }
+
+    @objc private func applicationDidResignActive() {
+        deactivateContext()
     }
 
     // MARK: - Settings
@@ -102,11 +129,11 @@ final class RulerController {
     // MARK: - Units
 
     /// Display units per point: 1 for logical points, 2 for device pixels on Retina.
-    private func unitsPerPoint(on screen: NSScreen?) -> CGFloat {
+    func unitsPerPoint(on screen: NSScreen?) -> CGFloat {
         Settings.shared.devicePixels ? (screen?.backingScaleFactor ?? 2.0) : 1.0
     }
 
-    private func screen(containing point: NSPoint) -> NSScreen {
+    func screen(containing point: NSPoint) -> NSScreen {
         NSScreen.screens.first { $0.frame.contains(point) } ?? NSScreen.main ?? NSScreen.screens[0]
     }
 
@@ -136,21 +163,16 @@ final class RulerController {
 
     private func tick() {
         let mouse = NSEvent.mouseLocation
-        let armed = Settings.shared.isMeasureArmed(NSEvent.modifierFlags)
-        let buttonDown = NSEvent.pressedMouseButtons & 1 != 0
 
-        let idle = mouse == lastMouse && armed == wasArmed && buttonDown == wasButtonDown
+        let idle = mouse == lastMouse
         defer {
             lastMouse = mouse
-            wasArmed = armed
-            wasButtonDown = buttonDown
         }
-        if idle && measureAnchor == nil && MeasurementStore.shared.isEmpty { return }
+        if idle && MeasurementStore.shared.isEmpty { return }
 
         updateCursorLines(mouse)
         updateCrosshair(mouse)
         MeasurementStore.shared.updateHitRegions(pointer: mouse)
-        updateMeasurement(mouse, armed: armed, buttonDown: buttonDown)
     }
 
     private func updateCursorLines(_ mouse: NSPoint) {
@@ -171,7 +193,7 @@ final class RulerController {
         }
     }
 
-    private func constrainSquareOrCircle(anchor: NSPoint, current: NSPoint) -> NSPoint {
+    static func constrainSquareOrCircle(anchor: NSPoint, current: NSPoint) -> NSPoint {
         let dx = current.x - anchor.x
         let dy = current.y - anchor.y
         let side = max(abs(dx), abs(dy))
@@ -180,58 +202,23 @@ final class RulerController {
         return NSPoint(x: anchor.x + signX * side, y: anchor.y + signY * side)
     }
 
-    private func updateMeasurement(_ mouse: NSPoint, armed: Bool, buttonDown: Bool) {
-        let flags = NSEvent.modifierFlags
-        let constrainRatio = flags.contains(.shift)
-
-        // Releasing the button keeps the measurement on screen as its own window,
-        // so several things can be measured at once.
-        if wasButtonDown && !buttonDown, let a = measureAnchor {
-            MeasurementStore.shared.add(anchor: a, current: measureCurrent, shapeType: Settings.shared.drawShapeType)
-            measureAnchor = nil
-            measureOverlay.hide()
-            setMeasureSpans(nil, nil)
-            return
-        }
-
-        if armed {
-            if buttonDown && !wasButtonDown {
-                measureAnchor = mouse          // gesture starts on the press
-            }
-            if buttonDown, let a = measureAnchor {
-                measureCurrent = constrainRatio ? constrainSquareOrCircle(anchor: a, current: mouse) : mouse
-            }
-        } else if !(buttonDown && measureAnchor != nil) {
-            // Not armed and not mid-drag: nothing to show.
-            if measureAnchor != nil || measureOverlay.isVisible {
-                measureAnchor = nil
-                measureOverlay.hide()
-                setMeasureSpans(nil, nil)
-            }
-            return
-        } else {
-            // Keep a drag alive if the modifier is let go
-            if let a = measureAnchor {
-                measureCurrent = constrainRatio ? constrainSquareOrCircle(anchor: a, current: mouse) : mouse
-            }
-        }
-
-        let scr = screen(containing: mouse)
-        measureOverlay.show(anchor: measureAnchor,
-                            current: measureAnchor == nil ? mouse : measureCurrent,
+    func updateLiveMeasurement(anchor: NSPoint, current: NSPoint, shapeType: ShapeType) {
+        let scr = screen(containing: current)
+        measureOverlay.show(anchor: anchor,
+                            current: current,
                             scale: unitsPerPoint(on: scr),
                             screen: scr,
-                            shapeType: Settings.shared.drawShapeType)
+                            shapeType: shapeType)
+        setMeasureSpans(anchor, current)
+    }
 
-        if let a = measureAnchor {
-            setMeasureSpans(a, measureCurrent)
-        } else {
-            setMeasureSpans(nil, nil)
-        }
+    func clearLiveMeasurement() {
+        measureOverlay.hide()
+        setMeasureSpans(nil, nil)
     }
 
     /// Mirrors the measured span onto both rulers.
-    private func setMeasureSpans(_ a: NSPoint?, _ b: NSPoint?) {
+    func setMeasureSpans(_ a: NSPoint?, _ b: NSPoint?) {
         for panel in panels {
             guard let a, let b else {
                 panel.rulerView.measureSpan = nil

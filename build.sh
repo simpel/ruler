@@ -27,7 +27,7 @@ if [ "$FAST" = false ]; then
   HOST_ARCH=$(uname -m)
   OTHER_ARCH=$([ "$HOST_ARCH" = "arm64" ] && echo x86_64 || echo arm64)
   swift build -c release \
-    -Xswiftc -target -Xswiftc "${OTHER_ARCH}-apple-macos13.0" \
+    --triple "${OTHER_ARCH}-apple-macosx13.0" \
     --scratch-path ".build-${OTHER_ARCH}"
   BINARIES+=(".build-${OTHER_ARCH}/release/RulerApp")
 fi

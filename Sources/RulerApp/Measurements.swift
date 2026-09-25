@@ -30,7 +30,7 @@ final class MeasurementWindow: NSPanel {
         isReleasedWhenClosed = false
         isMovableByWindowBackground = false
         contentView = measureView
-        level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 1)
+        level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 3)
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle, .stationary]
 
         measureView.shapeType = shapeType

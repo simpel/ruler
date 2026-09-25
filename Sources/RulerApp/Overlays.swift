@@ -21,6 +21,19 @@ enum Palette {
         let bottom = face.blended(withFraction: 0.16, of: black) ?? face
         return NSGradient(starting: top, ending: bottom) ?? NSGradient(colors: [face, face])!
     }()
+
+    // Inactive / neutral palette (used when not in active drawing context)
+    static let inactiveFace = NSColor(calibratedRed: 0x24 / 255.0, green: 0x28 / 255.0, blue: 0x30 / 255.0, alpha: 1.0)
+    static let inactiveInk = NSColor(calibratedWhite: 0.65, alpha: 1.0)
+    static let inactiveLive = NSColor(calibratedWhite: 0.48, alpha: 0.8)
+
+    static let inactiveFaceGradient: NSGradient = {
+        let white = NSColor(calibratedWhite: 1.0, alpha: 1.0)
+        let black = NSColor(calibratedWhite: 0.0, alpha: 1.0)
+        let top = inactiveFace.blended(withFraction: 0.12, of: white) ?? inactiveFace
+        let bottom = inactiveFace.blended(withFraction: 0.15, of: black) ?? inactiveFace
+        return NSGradient(starting: top, ending: bottom) ?? NSGradient(colors: [inactiveFace, inactiveFace])!
+    }()
 }
 
 /// A click-through hairline window spanning a whole screen. Used for the
@@ -83,7 +96,7 @@ final class MeasureOverlayWindow: NSPanel {
         hasShadow = false
         isReleasedWhenClosed = false
         contentView = measureView
-        level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 1)
+        level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 4)
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle, .stationary]
     }
 

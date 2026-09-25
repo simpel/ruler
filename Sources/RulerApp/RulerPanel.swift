@@ -18,7 +18,7 @@ final class RulerPanel: NSPanel, NSWindowDelegate {
         isFloatingPanel = true
         becomesKeyOnlyIfNeeded = true
         hidesOnDeactivate = false
-        level = .statusBar
+        level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 2)
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
         isOpaque = false
         backgroundColor = .clear

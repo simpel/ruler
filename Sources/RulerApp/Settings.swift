@@ -7,6 +7,7 @@ enum RulerAxis {
 
 extension Notification.Name {
     static let rulerSettingsChanged = Notification.Name("RulerSettingsChanged")
+    static let rulerContextChanged = Notification.Name("RulerContextChanged")
 }
 
 /// User-visible options, persisted in UserDefaults.

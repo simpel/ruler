@@ -67,11 +67,13 @@ final class HelpWindowController {
             ("Move the pointer", "a red line and a pixel readout follow it on both rulers"),
         ]))
 
-        out.append(heading("Shapes & Measuring — ⌘-drag"))
-        out.append(body("Hold Command (⌘) and drag to draw the selected shape (rectangle or circle). Hold Command + Shift (⌘⇧) to constrain to a 1:1 ratio (perfect square or perfect circle). The tooltip displays screen X/Y, width/height, and for circles, radius and circumference.\n"))
+        out.append(heading("Shapes & Measuring"))
+        out.append(body("Click either ruler or open Distanser Controls to enter active drawing mode. The rulers turn from neutral charcoal to blueprint blue. Drag anywhere on screen to draw the selected shape without interfering with apps underneath. Hold Shift to constrain to a 1:1 ratio (perfect square or circle). Clicking anywhere on the screen exits drawing mode and returns rulers to neutral.\n"))
         out.append(items([
+            ("Activate mode", "click either ruler or Distanser Controls to enter active drawing mode"),
             ("Shape modes", "switch between Rectangle (⌘4) and Circle (⌘5) in the Shapes menu or Controls"),
-            ("1:1 ratio lock", "hold Shift while drawing with Command to constrain to a perfect square or circle"),
+            ("1:1 ratio lock", "hold Shift while dragging to constrain to a perfect square or circle"),
+            ("Exit mode", "click anywhere on the screen (or press Esc) to leave active mode; rulers return to neutral"),
             ("Draggable tooltips", "drag the readout badge or outline to move the shape anywhere on screen"),
             ("Set values", "click the sliders icon on any shape's tooltip to open a dialog and set exact position and dimensions"),
             ("Shapes stay", "letting go of the mouse leaves the shape on screen, so you can place several at once"),
