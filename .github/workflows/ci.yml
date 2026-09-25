@@ -1,4 +1,4 @@
-name: Build
+name: CI
 
 on:
   push:
@@ -7,10 +7,38 @@ on:
 
 jobs:
   build:
+    name: Build, Package & Audit
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v5
-      - name: Build universal app
-        run: ./build.sh
-      - name: Check architectures
-        run: lipo -archs build/Distanser.app/Contents/MacOS/Distanser
+
+      - name: Build and package
+        run: ./package.sh
+
+      - name: Check universal architecture
+        run: |
+          lipo -archs build/Distanser.app/Contents/MacOS/Distanser | tee /dev/stderr | grep -q "arm64"
+          lipo -archs build/Distanser.app/Contents/MacOS/Distanser | tee /dev/stderr | grep -q "x86_64"
+
+      - name: Verify DMG package integrity
+        run: |
+          VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Resources/Info.plist)
+          DMG="build/dist/Distanser-${VERSION}.dmg"
+          test -f "$DMG"
+          test -f "build/dist/Distanser-${VERSION}.zip"
+          test -f "build/dist/Distanser.dmg"
+
+          # Mount DMG and verify app bundle
+          MOUNT_DIR=$(mktemp -d)
+          hdiutil attach "$DMG" -mountpoint "$MOUNT_DIR" -nobrowse -quiet
+          test -d "$MOUNT_DIR/Distanser.app"
+          test -x "$MOUNT_DIR/Distanser.app/Contents/MacOS/Distanser"
+          hdiutil detach "$MOUNT_DIR" -quiet
+          rm -rf "$MOUNT_DIR"
+
+      - name: Validate Homebrew Cask
+        run: |
+          brew tap simpel/tap
+          cp Casks/distanser.rb "$(brew --repo simpel/tap)/Casks/distanser.rb"
+          brew style simpel/tap/distanser
+          brew audit --cask simpel/tap/distanser

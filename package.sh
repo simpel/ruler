@@ -11,7 +11,7 @@ rm -rf "$DIST"
 mkdir -p "$DIST"
 
 ditto -c -k --keepParent build/Distanser.app "$DIST/Distanser-$VERSION.zip"
-ln -sf "Distanser-$VERSION.zip" "$DIST/Ruler-$VERSION.zip"
+cp -f "$DIST/Distanser-$VERSION.zip" "$DIST/Ruler-$VERSION.zip"
 
 STAGE=$(mktemp -d)
 cp -R build/Distanser.app "$STAGE/Distanser.app"
@@ -21,9 +21,9 @@ hdiutil create -volname "Distanser $VERSION" -srcfolder "$STAGE" -ov -format UDZ
 rm -rf "$STAGE"
 
 # Stable direct-download URLs
-cp "$DIST/Distanser-$VERSION.dmg" "$DIST/Distanser.dmg"
-ln -sf "Distanser-$VERSION.dmg" "$DIST/Ruler-$VERSION.dmg"
-ln -sf "Distanser.dmg" "$DIST/Ruler.dmg"
+cp -f "$DIST/Distanser-$VERSION.dmg" "$DIST/Distanser.dmg"
+cp -f "$DIST/Distanser-$VERSION.dmg" "$DIST/Ruler-$VERSION.dmg"
+cp -f "$DIST/Distanser.dmg" "$DIST/Ruler.dmg"
 
 echo "Packaged:"
 ls -lh "$DIST" | tail -n +2

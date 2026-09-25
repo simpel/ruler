@@ -3,6 +3,7 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -10,11 +11,26 @@ permissions:
 jobs:
   release:
     runs-on: macos-latest
+    outputs:
+      version: ${{ steps.package.outputs.version }}
+      sha256: ${{ steps.package.outputs.sha256 }}
+      tag: ${{ steps.package.outputs.tag }}
     steps:
       - uses: actions/checkout@v5
 
       - name: Build and package
-        run: ./package.sh
+        id: package
+        run: |
+          ./package.sh
+          VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Resources/Info.plist)
+          SHA=$(shasum -a 256 "build/dist/Distanser-${VERSION}.dmg" | cut -d' ' -f1)
+          TAG="${GITHUB_REF_NAME}"
+          if [[ "$TAG" != v* ]]; then
+            TAG="v${VERSION}"
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "sha256=${SHA}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
 
       - name: Verify the app is universal
         run: lipo -archs build/Distanser.app/Contents/MacOS/Distanser | tee /dev/stderr | grep -q "arm64" && lipo -archs build/Distanser.app/Contents/MacOS/Distanser | grep -q "x86_64"
@@ -22,9 +38,10 @@ jobs:
       - name: Publish release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.package.outputs.tag }}
         run: |
-          gh release create "$GITHUB_REF_NAME" build/dist/* \
-            --title "Distanser $GITHUB_REF_NAME" \
+          gh release create "$TAG" build/dist/* \
+            --title "Distanser $TAG" \
             --notes-file - <<'NOTES'
           Unsigned build — macOS quarantines apps downloaded from the internet.
           After dragging Distanser to Applications, open it once via
@@ -38,27 +55,43 @@ jobs:
     needs: release
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v5
+
       - name: Point the Homebrew cask at this release
         env:
           GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ needs.release.outputs.tag }}
+          VERSION: ${{ needs.release.outputs.version }}
+          SHA: ${{ needs.release.outputs.sha256 }}
         # Skipped when the token secret is absent, so the release still succeeds.
         if: env.GH_TOKEN != ''
         run: |
-          VERSION="${TAG#v}"
-          curl -sfL "https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/Ruler-${VERSION}.dmg" -o Ruler.dmg
-          SHA=$(sha256sum Ruler.dmg | cut -d" " -f1)
-
           git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/simpel/homebrew-tap.git"
           cd homebrew-tap
-          sed -i -E "s|^  version \".*\"$|  version \"${VERSION}\"|" Casks/ruler.rb
-          sed -i -E "s|^  sha256 \".*\"$|  sha256 \"${SHA}\"|" Casks/ruler.rb
+          mkdir -p Casks
+
+          # Update or create Casks/distanser.rb
+          if [ -f ../Casks/distanser.rb ]; then
+            cp ../Casks/distanser.rb Casks/distanser.rb
+          fi
+          sed -i -E "s|^  version \".*\"$|  version \"${VERSION}\"|" Casks/distanser.rb
+          sed -i -E "s|^  sha256 \".*\"$|  sha256 \"${SHA}\"|" Casks/distanser.rb
+
+          # Also keep ruler.rb updated for backwards compatibility
+          if [ -f Casks/ruler.rb ]; then
+            sed -i -E "s|^  version \".*\"$|  version \"${VERSION}\"|" Casks/ruler.rb
+            sed -i -E "s|^  sha256 \".*\"$|  sha256 \"${SHA}\"|" Casks/ruler.rb
+            sed -i -E 's|app "Ruler\.app"|app "Distanser.app"|' Casks/ruler.rb
+            sed -i -E 's|Ruler\.app|Distanser.app|g' Casks/ruler.rb
+            sed -i -E 's|/Ruler-|/Distanser-|g' Casks/ruler.rb
+          fi
 
           if git diff --quiet; then
-            echo "Cask already points at ${VERSION}"
+            echo "Casks already point at ${VERSION}"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git commit -am "Update ruler to ${VERSION}"
+          git add Casks/
+          git commit -m "Update distanser to ${VERSION}"
           git push
