@@ -411,8 +411,15 @@ final class RulerView: NSView {
         RulerController.shared.activateContext()
         let p = convert(event.locationInWindow, from: nil)
 
+        if event.modifierFlags.contains(.command) {
+            // Command-click sets the zero mark where you clicked.
+            Settings.shared.setZeroOffset(distance(forViewPoint: p), for: axis)
+            needsDisplay = true
+            return
+        }
+
         if event.clickCount == 2 {
-            // Double-click sets the zero mark where you clicked.
+            // Double-click also sets the zero mark where you clicked.
             Settings.shared.setZeroOffset(distance(forViewPoint: p), for: axis)
             needsDisplay = true
             return

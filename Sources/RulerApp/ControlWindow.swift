@@ -45,11 +45,11 @@ final class ControlWindowController: NSObject, NSWindowDelegate {
     }
 
     private func makeWindow() -> NSWindow {
-        let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 320, height: 600),
+        let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 320, height: 640),
                          styleMask: [.titled, .closable, .miniaturizable, .fullSizeContentView],
                          backing: .buffered,
                          defer: false)
-        w.level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 5)
+        w.level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 7)
         w.appearance = NSAppearance(named: .darkAqua)
         w.title = "Distanser Controls"
         w.titleVisibility = .hidden
@@ -94,15 +94,13 @@ private final class ControlContentView: NSView {
     private let shapeSection = ShapeControlSection()
     private let commandsSection = CommandsSection()
 
-    // Toggles
-    private let checkHorizontal = NSButton(checkboxWithTitle: "Horizontal Ruler", target: nil, action: nil)
-    private let checkVertical = NSButton(checkboxWithTitle: "Vertical Ruler", target: nil, action: nil)
-    private let checkCrosshair = NSButton(checkboxWithTitle: "Crosshair", target: nil, action: nil)
-    private let checkClickThrough = NSButton(checkboxWithTitle: "Click-Through", target: nil, action: nil)
-
-    // Opacity
-    private let opacityLabel = NSTextField(labelWithString: "100%")
-    private let opacitySlider = NSSlider(value: 1.0, minValue: 0.3, maxValue: 1.0, target: nil, action: nil)
+    // Display Controls
+    private let switchHorizontal = NSSwitch()
+    private let switchVertical = NSSwitch()
+    private let switchCrosshair = NSSwitch()
+    private let switchClickThrough = NSSwitch()
+    private let opacityLabel = ScrubbableLabel(labelWithString: "Opacity")
+    private let opacityField = ScrubbableField()
 
     // Action buttons with generous vertical inline padding
     private let btnReset = PaddedButton(title: "Reset Geometry", fontSize: 12)
@@ -152,18 +150,29 @@ private final class ControlContentView: NSView {
             return label
         }
 
-        // Checkboxes with 12pt font
-        for btn in [checkHorizontal, checkVertical, checkCrosshair, checkClickThrough] {
-            btn.attributedTitle = NSAttributedString(string: btn.title, attributes: [
-                .font: NSFont.systemFont(ofSize: universalFontSize, weight: .regular),
-                .foregroundColor: textPrimary,
-            ])
+        for sw in [switchHorizontal, switchVertical, switchCrosshair, switchClickThrough] {
+            sw.controlSize = .small
         }
 
-        opacitySlider.controlSize = .regular
-
-        opacityLabel.font = NSFont.monospacedDigitSystemFont(ofSize: universalFontSize, weight: .medium)
+        opacityLabel.font = NSFont.systemFont(ofSize: universalFontSize, weight: .regular)
         opacityLabel.textColor = textPrimary
+        opacityLabel.onScrubDelta = { [weak self] delta in self?.scrubOpacity(delta: delta) }
+
+        let opacityFormatter = NumberFormatter()
+        opacityFormatter.minimum = 0
+        opacityFormatter.maximum = 100
+        opacityFormatter.allowsFloats = false
+        opacityFormatter.maximumFractionDigits = 0
+        opacityField.formatter = opacityFormatter
+        opacityField.font = NSFont.monospacedDigitSystemFont(ofSize: universalFontSize, weight: .regular)
+        opacityField.textColor = textPrimary
+        opacityField.backgroundColor = NSColor(calibratedWhite: 0.15, alpha: 0.8)
+        opacityField.isBordered = true
+        opacityField.bezelStyle = .roundedBezel
+        opacityField.alignment = .center
+        opacityField.translatesAutoresizingMaskIntoConstraints = false
+        opacityField.widthAnchor.constraint(equalToConstant: 48).isActive = true
+        opacityField.onScrubDelta = { [weak self] delta in self?.scrubOpacity(delta: delta) }
 
         // Action buttons with 12pt font and generous 34pt height for vertical padding
         for btn in [btnReset, btnResetZeros, btnClear, btnClearGuides] {
@@ -195,18 +204,38 @@ private final class ControlContentView: NSView {
             titleLabel.topAnchor.constraint(equalTo: topAnchor, constant: 10),
         ])
 
-        // Display rows with more breathing room
-        let rulerRow = NSStackView(views: [checkHorizontal, checkVertical])
-        rulerRow.orientation = .horizontal
-        rulerRow.spacing = 20
+        let makeRowLabel = { [weak self] (text: String) -> NSTextField in
+            let label = NSTextField(labelWithString: text)
+            label.font = NSFont.systemFont(ofSize: universalFontSize, weight: .regular)
+            label.textColor = self?.textPrimary ?? .white
+            return label
+        }
 
-        let optRow = NSStackView(views: [checkCrosshair, checkClickThrough])
-        optRow.orientation = .horizontal
-        optRow.spacing = 20
+        let makeControlRow = { (label: NSView, control: NSView) -> NSStackView in
+            let row = NSStackView(views: [label, control])
+            row.orientation = .horizontal
+            row.distribution = .equalSpacing
+            row.alignment = .centerY
+            row.translatesAutoresizingMaskIntoConstraints = false
+            row.widthAnchor.constraint(equalToConstant: 284).isActive = true
+            return row
+        }
+
+        let displayStack = NSStackView(views: [
+            makeControlRow(makeRowLabel("Horizontal Ruler"), switchHorizontal),
+            makeControlRow(makeRowLabel("Vertical Ruler"), switchVertical),
+            makeControlRow(makeRowLabel("Crosshair"), switchCrosshair),
+            makeControlRow(makeRowLabel("Click-Through"), switchClickThrough),
+            makeControlRow(opacityLabel, opacityField),
+        ])
+        displayStack.orientation = .vertical
+        displayStack.alignment = .leading
+        displayStack.spacing = 7
+        displayStack.translatesAutoresizingMaskIntoConstraints = false
+        displayStack.widthAnchor.constraint(equalToConstant: 284).isActive = true
 
         rootStack.addArrangedSubview(makeSection("DISPLAY"))
-        rootStack.addArrangedSubview(rulerRow)
-        rootStack.addArrangedSubview(optRow)
+        rootStack.addArrangedSubview(displayStack)
 
         // Shapes (draw mode)
         shapeSection.translatesAutoresizingMaskIntoConstraints = false
@@ -217,21 +246,9 @@ private final class ControlContentView: NSView {
         commandsSection.translatesAutoresizingMaskIntoConstraints = false
         commandsSection.widthAnchor.constraint(equalToConstant: 284).isActive = true
         rootStack.addArrangedSubview(commandsSection)
-
-        // Opacity
-        let opHeader = NSStackView(views: [makeSection("OPACITY"), opacityLabel])
-        opHeader.orientation = .horizontal
-        opHeader.distribution = .equalSpacing
-        opHeader.translatesAutoresizingMaskIntoConstraints = false
-        opHeader.widthAnchor.constraint(equalToConstant: 284).isActive = true
-        rootStack.addArrangedSubview(opHeader)
-
-        opacitySlider.translatesAutoresizingMaskIntoConstraints = false
-        opacitySlider.widthAnchor.constraint(equalToConstant: 284).isActive = true
-        rootStack.addArrangedSubview(opacitySlider)
+        rootStack.setCustomSpacing(14, after: commandsSection)
 
         // Actions: 2x2 grid with generous 34pt vertical padding
-        rootStack.addArrangedSubview(makeSection("ACTIONS"))
         let actionsRow1 = NSStackView(views: [btnReset, btnResetZeros])
         actionsRow1.orientation = .horizontal
         actionsRow1.distribution = .fillEqually
@@ -288,20 +305,19 @@ private final class ControlContentView: NSView {
     }
 
     private func bindActions() {
-        checkHorizontal.target = self
-        checkHorizontal.action = #selector(onToggleHorizontal)
+        switchHorizontal.target = self
+        switchHorizontal.action = #selector(onToggleHorizontal)
 
-        checkVertical.target = self
-        checkVertical.action = #selector(onToggleVertical)
+        switchVertical.target = self
+        switchVertical.action = #selector(onToggleVertical)
 
-        checkCrosshair.target = self
-        checkCrosshair.action = #selector(onToggleCrosshair)
+        switchCrosshair.target = self
+        switchCrosshair.action = #selector(onToggleCrosshair)
 
-        checkClickThrough.target = self
-        checkClickThrough.action = #selector(onToggleClickThrough)
+        switchClickThrough.target = self
+        switchClickThrough.action = #selector(onToggleClickThrough)
 
-        opacitySlider.target = self
-        opacitySlider.action = #selector(onOpacityChanged)
+        opacityField.delegate = self
 
         btnReset.target = self
         btnReset.action = #selector(onResetGeometry)
@@ -328,36 +344,39 @@ private final class ControlContentView: NSView {
         defer { isSyncing = false }
 
         let s = Settings.shared
-        checkHorizontal.state = s.showHorizontal ? .on : .off
-        checkVertical.state = s.showVertical ? .on : .off
-        checkCrosshair.state = s.crosshairEnabled ? .on : .off
-        checkClickThrough.state = s.clickThrough ? .on : .off
+        switchHorizontal.state = s.showHorizontal ? .on : .off
+        switchVertical.state = s.showVertical ? .on : .off
+        switchCrosshair.state = s.crosshairEnabled ? .on : .off
+        switchClickThrough.state = s.clickThrough ? .on : .off
 
         shapeSection.syncWithSettings()
-        opacitySlider.doubleValue = s.opacity
-        opacityLabel.stringValue = "\(Int(s.opacity * 100))%"
+        let val = Int((s.opacity * 100).rounded())
+        if opacityField.currentEditor() == nil {
+            opacityField.stringValue = "\(val)"
+        }
     }
 
     @objc private func onToggleHorizontal() {
-        Settings.shared.showHorizontal = checkHorizontal.state == .on
+        Settings.shared.showHorizontal = switchHorizontal.state == .on
     }
 
     @objc private func onToggleVertical() {
-        Settings.shared.showVertical = checkVertical.state == .on
+        Settings.shared.showVertical = switchVertical.state == .on
     }
 
     @objc private func onToggleCrosshair() {
-        Settings.shared.crosshairEnabled = checkCrosshair.state == .on
+        Settings.shared.crosshairEnabled = switchCrosshair.state == .on
     }
 
     @objc private func onToggleClickThrough() {
-        Settings.shared.clickThrough = checkClickThrough.state == .on
+        Settings.shared.clickThrough = switchClickThrough.state == .on
     }
 
-    @objc private func onOpacityChanged() {
-        let val = (opacitySlider.doubleValue * 100).rounded() / 100
-        Settings.shared.opacity = val
-        opacityLabel.stringValue = "\(Int(val * 100))%"
+    private func scrubOpacity(delta: CGFloat) {
+        let currentVal = Double(opacityField.stringValue) ?? (Settings.shared.opacity * 100)
+        let newVal = min(100, max(0, currentVal + delta))
+        opacityField.stringValue = "\(Int(newVal.rounded()))"
+        Settings.shared.opacity = newVal / 100.0
     }
 
     @objc private func onResetGeometry() {
@@ -386,5 +405,23 @@ private final class ControlContentView: NSView {
         if let url = URL(string: "https://www.joelsanden.se/ruler/") {
             NSWorkspace.shared.open(url)
         }
+    }
+}
+
+extension ControlContentView: NSTextFieldDelegate {
+    func controlTextDidChange(_ obj: Notification) {
+        guard !isSyncing, let field = obj.object as? NSTextField, field === opacityField else { return }
+        if let val = Double(opacityField.stringValue.trimmingCharacters(in: .whitespaces)) {
+            let clamped = min(100, max(0, val))
+            Settings.shared.opacity = clamped / 100.0
+        }
+    }
+
+    func controlTextDidEndEditing(_ obj: Notification) {
+        guard let field = obj.object as? NSTextField, field === opacityField else { return }
+        let val = Double(opacityField.stringValue.trimmingCharacters(in: .whitespaces)) ?? (Settings.shared.opacity * 100)
+        let clamped = min(100, max(0, val))
+        opacityField.stringValue = "\(Int(clamped.rounded()))"
+        Settings.shared.opacity = clamped / 100.0
     }
 }

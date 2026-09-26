@@ -30,7 +30,7 @@ final class MeasurementWindow: NSPanel {
         isReleasedWhenClosed = false
         isMovableByWindowBackground = false
         contentView = measureView
-        level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 3)
+        level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 5)
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle, .stationary]
 
         measureView.shapeType = shapeType
@@ -92,34 +92,46 @@ final class MeasurementWindow: NSPanel {
     }
 
     /// The window covers a large area, so it stays click-through to apps underneath
-    /// and only becomes clickable while the pointer is over the dismiss button,
+    /// and only becomes clickable while the pointer is over the control dots, the dismiss button,
     /// the edit button, the move handle, a scrubbable number, the tooltip badge, or the shape outline.
     func updateHitRegion(pointer: NSPoint) {
         guard !Settings.shared.clickThrough else {
             if !ignoresMouseEvents { ignoresMouseEvents = true }
+            measureView.hoveredDot = nil
             measureView.closeHot = false
             measureView.editHot = false
             measureView.moveHot = false
+            measureView.centerMoveHot = false
             measureView.tooltipHot = false
             measureView.outlineHot = false
+            return
+        }
+
+        if measureView.isInteracting {
+            if ignoresMouseEvents { ignoresMouseEvents = false }
             return
         }
 
         let windowPoint = convertFromScreen(NSRect(origin: pointer, size: .zero)).origin
         let viewPoint = measureView.convert(windowPoint, from: nil)
 
-        let overClose = measureView.closeRect?.insetBy(dx: -4, dy: -4).contains(viewPoint) ?? false
-        let overEdit = !overClose && (measureView.editRect?.insetBy(dx: -4, dy: -4).contains(viewPoint) ?? false)
-        let overMove = !overClose && !overEdit && (measureView.moveRect?.insetBy(dx: -4, dy: -4).contains(viewPoint) ?? false)
-        let overMetric = !overClose && !overEdit && !overMove && (measureView.metricHits.contains { $0.rect.contains(viewPoint) })
-        let overBadge = !overClose && !overEdit && !overMove && !overMetric && (measureView.badgeRect?.contains(viewPoint) ?? false)
-        let overOutline = !overClose && !overEdit && !overMove && !overMetric && !overBadge && measureView.isOverOutline(viewPoint)
+        let hitDot = measureView.resizeDot(at: viewPoint)
+        let overDot = hitDot != nil
+        let overClose = !overDot && (measureView.closeRect?.insetBy(dx: -4, dy: -4).contains(viewPoint) ?? false)
+        let overEdit = !overDot && !overClose && (measureView.editRect?.insetBy(dx: -4, dy: -4).contains(viewPoint) ?? false)
+        let overMove = !overDot && !overClose && !overEdit && (measureView.moveRect?.insetBy(dx: -4, dy: -4).contains(viewPoint) ?? false)
+        let overCenterMove = !overDot && !overClose && !overEdit && !overMove && (measureView.centerMoveRect?.contains(viewPoint) ?? false)
+        let overMetric = !overDot && !overClose && !overEdit && !overMove && !overCenterMove && (measureView.metricHits.contains { $0.rect.contains(viewPoint) })
+        let overBadge = !overDot && !overClose && !overEdit && !overMove && !overCenterMove && !overMetric && (measureView.badgeRect?.contains(viewPoint) ?? false)
+        let overOutline = !overDot && !overClose && !overEdit && !overMove && !overCenterMove && !overMetric && !overBadge && measureView.isOverOutline(viewPoint)
 
-        let interactive = overClose || overEdit || overMove || overMetric || overBadge || overOutline
+        let interactive = overDot || overClose || overEdit || overMove || overCenterMove || overMetric || overBadge || overOutline
         if ignoresMouseEvents == interactive { ignoresMouseEvents = !interactive }
+        measureView.hoveredDot = hitDot?.kind
         measureView.closeHot = overClose
         measureView.editHot = overEdit
         measureView.moveHot = overMove
+        measureView.centerMoveHot = overCenterMove
         measureView.tooltipHot = overBadge || overMetric
         measureView.outlineHot = overOutline
     }

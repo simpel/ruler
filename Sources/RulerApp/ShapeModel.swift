@@ -36,4 +36,13 @@ enum ShapeType: String, CaseIterable, Codable {
             return pixelDist <= tolerance
         }
     }
+
+    /// Computes the exact perimeter/circumference of an ellipse (or circle) using Ramanujan's formula.
+    static func ellipseCircumference(width: CGFloat, height: CGFloat) -> CGFloat {
+        let a = width / 2.0
+        let b = height / 2.0
+        guard a > 0 || b > 0 else { return 0 }
+        let h = pow(a - b, 2) / max(0.0001, pow(a + b, 2))
+        return CGFloat.pi * (a + b) * (1.0 + (3.0 * h) / (10.0 + sqrt(4.0 - 3.0 * h)))
+    }
 }

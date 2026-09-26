@@ -128,7 +128,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         menu.addItem(.separator())
         _ = add(to: menu, "Distanser Controls…", #selector(showSettings), key: ",")
-        _ = add(to: menu, "Distanser Help…", #selector(showHelp), key: "?")
         _ = add(to: menu, "Quit Distanser", #selector(quit), key: "q")
         return menu
     }
@@ -192,11 +191,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func toggleLaunchAtLogin() {
+        let service = SMAppService.mainApp
         do {
-            if SMAppService.mainApp.status == .enabled {
-                try SMAppService.mainApp.unregister()
-            } else {
-                try SMAppService.mainApp.register()
+            switch service.status {
+            case .enabled:
+                try service.unregister()
+            case .requiresApproval:
+                SMAppService.openSystemSettingsLoginItems()
+            default:
+                try service.register()
             }
         } catch {
             let alert = NSAlert()

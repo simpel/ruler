@@ -77,7 +77,6 @@ final class CommandsSection: NSView {
 
         let shapesCommands: [(String, String)] = [
             ("Drag", "Draw shape (hold ⇧ for 1:1)"),
-            ("Double-click", "Open shape settings dialog"),
         ]
         for (gesture, desc) in shapesCommands {
             stack.addArrangedSubview(makeRow(gesture: gesture, description: desc))
@@ -110,7 +109,8 @@ final class CommandsSection: NSView {
         stack.setCustomSpacing(3, after: rulersGroup)
 
         let rulersCommands: [(String, String)] = [
-            ("Double-click", "Set zero mark on ruler"),
+            ("Drag", "Move ruler (drag end to resize)"),
+            ("⌘ Click", "Set zero mark on ruler"),
         ]
         for (gesture, desc) in rulersCommands {
             stack.addArrangedSubview(makeRow(gesture: gesture, description: desc))

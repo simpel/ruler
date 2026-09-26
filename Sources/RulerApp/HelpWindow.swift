@@ -62,7 +62,7 @@ final class HelpWindowController {
         out.append(items([
             ("Drag a ruler", "move it anywhere on screen"),
             ("Drag the far end", "change its length — the end with the grip dots"),
-            ("Double-click a ruler", "set its zero mark at that spot"),
+            ("⌘-click a ruler", "set its zero mark at that spot (or double-click)"),
             ("Right-click a ruler", "set or reset zero, add a cross guide, open settings, hide the ruler, or quit"),
             ("Move the pointer", "a red line and a pixel readout follow it on both rulers"),
         ]))
@@ -74,12 +74,12 @@ final class HelpWindowController {
             ("Shape modes", "switch between Rectangle (⌘4) and Circle (⌘5) in the Shapes menu or Controls"),
             ("1:1 ratio lock", "hold Shift while dragging to constrain to a perfect square or circle"),
             ("Exit mode", "click anywhere on the screen (or press Esc) to leave active mode; rulers return to neutral"),
-            ("Draggable tooltips", "drag the readout badge or outline to move the shape anywhere on screen"),
-            ("Set values", "click the sliders icon on any shape's tooltip to open a dialog and set exact position and dimensions"),
+            ("Move shapes", "drag the center symbol, readout badge, or outline to move the shape anywhere on screen"),
+            ("Set values", "double-click a shape or click the sliders icon on its tooltip to open settings"),
             ("Shapes stay", "letting go of the mouse leaves the shape on screen, so you can place several at once"),
             ("Dismiss one", "click the ✕ on its readout badge"),
             ("Dismiss all", "Clear All Shapes in the menu or Controls"),
-            ("Note", "Distanser keeps shape interiors click-through so apps underneath still work. Drag via the badge tooltip or outline to reposition."),
+            ("Note", "Distanser keeps shape interiors click-through so apps underneath still work. Drag via the center symbol, badge tooltip, or outline to reposition."),
         ]))
 
         out.append(heading("Marklines and guides"))

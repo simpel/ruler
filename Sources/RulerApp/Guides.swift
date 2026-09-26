@@ -31,7 +31,7 @@ final class GuideWindow: NSPanel {
         isMovableByWindowBackground = false
         contentView = guideView
         guideView.owner = self
-        level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 1)
+        level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 3)
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle, .stationary]
         layout()
     }
@@ -233,13 +233,13 @@ final class GuideLabelWindow: NSPanel {
         isReleasedWhenClosed = false
         contentView = labelView
         // Above the rulers, so a number is never hidden under one.
-        level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 1)
+        level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 4)
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle, .stationary]
     }
 
     override var canBecomeKey: Bool { false }
 
-    static let laneStep: CGFloat = 20
+    static let laneStep: CGFloat = 22
     static let edgeInset: CGFloat = 6
 
     static func badgeSize(for text: String) -> NSSize {
@@ -279,7 +279,7 @@ final class GuideLabelView: NSView {
 
     private var attributed: NSAttributedString {
         NSAttributedString(string: text, attributes: [
-            .font: NSFont.monospacedDigitSystemFont(ofSize: 9, weight: .semibold),
+            .font: NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .bold),
             .foregroundColor: Palette.guideBadgeText,
         ])
     }
@@ -289,14 +289,23 @@ final class GuideLabelView: NSView {
 
     static func size(for text: String) -> NSSize {
         let s = NSAttributedString(string: text, attributes: [
-            .font: NSFont.monospacedDigitSystemFont(ofSize: 9, weight: .semibold),
+            .font: NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .bold),
         ]).size()
-        return NSSize(width: ceil(s.width) + 9, height: ceil(s.height) + 4)
+        return NSSize(width: ceil(s.width) + 10, height: ceil(s.height) + 5)
     }
 
     override func draw(_ dirtyRect: NSRect) {
+        NSGraphicsContext.saveGraphicsState()
+        let shadow = NSShadow()
+        shadow.shadowColor = NSColor.black.withAlphaComponent(0.28)
+        shadow.shadowOffset = NSSize(width: 0, height: -1)
+        shadow.shadowBlurRadius = 2.5
+        shadow.set()
+
         Palette.guideLine.withAlphaComponent(0.95).setFill()
-        NSBezierPath(roundedRect: bounds, xRadius: 3, yRadius: 3).fill()
+        NSBezierPath(roundedRect: bounds, xRadius: 3.5, yRadius: 3.5).fill()
+        NSGraphicsContext.restoreGraphicsState()
+
         let text = attributed
         let size = text.size()
         text.draw(at: NSPoint(x: (bounds.width - size.width) / 2,
@@ -325,7 +334,7 @@ final class GuideDistanceOverlay: NSPanel {
         hasShadow = false
         isReleasedWhenClosed = false
         contentView = distanceView
-        level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue - 1)
+        level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 4)
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle, .stationary]
     }
 
@@ -357,9 +366,9 @@ final class GuideDistanceView: NSView {
     private var dimensions: [Dimension] = []
     private var orientation: RulerAxis = .vertical
 
-    private let baseInset: CGFloat = 12      // clearance past the position badges
-    private let laneStep: CGFloat = 21       // one row per sibling
-    private let tick: CGFloat = 5
+    private let baseInset: CGFloat = 14      // clearance past the position badges
+    private let laneStep: CGFloat = 28       // spacing per dimension row
+    private let tick: CGFloat = 6
 
     override var isOpaque: Bool { false }
 
@@ -426,20 +435,39 @@ final class GuideDistanceView: NSView {
 
     private func drawBadge(_ string: String, at point: NSPoint) {
         let text = NSAttributedString(string: string, attributes: [
-            .font: NSFont.monospacedDigitSystemFont(ofSize: 9, weight: .semibold),
+            .font: NSFont.monospacedDigitSystemFont(ofSize: 13, weight: .bold),
             .foregroundColor: Palette.guideBadgeText,
         ])
         let size = text.size()
-        let padX: CGFloat = 4.5, padY: CGFloat = 2
+        let padX: CGFloat = 7, padY: CGFloat = 3.5
         var rect = NSRect(x: point.x - (size.width + padX * 2) / 2,
                           y: point.y - (size.height + padY * 2) / 2,
-                          width: size.width + padX * 2,
-                          height: size.height + padY * 2)
+                          width: ceil(size.width) + padX * 2,
+                          height: ceil(size.height) + padY * 2)
         rect.origin.x = min(max(rect.origin.x, bounds.minX + 2), bounds.maxX - rect.width - 2)
         rect.origin.y = min(max(rect.origin.y, bounds.minY + 2), bounds.maxY - rect.height - 2)
 
+        // Drop shadow ensures contrast against light and dark screen content
+        NSGraphicsContext.saveGraphicsState()
+        let shadow = NSShadow()
+        shadow.shadowColor = NSColor.black.withAlphaComponent(0.28)
+        shadow.shadowOffset = NSSize(width: 0, height: -1)
+        shadow.shadowBlurRadius = 3
+        shadow.set()
+
         Palette.guideTint.setFill()
-        NSBezierPath(roundedRect: rect, xRadius: 3, yRadius: 3).fill()
-        text.draw(at: NSPoint(x: rect.minX + padX, y: rect.minY + padY))
+        let path = NSBezierPath(roundedRect: rect, xRadius: 4, yRadius: 4)
+        path.fill()
+        NSGraphicsContext.restoreGraphicsState()
+
+        // Crisp drafting amber border outline to define the badge clearly
+        Palette.guideLine.withAlphaComponent(0.75).setStroke()
+        let border = NSBezierPath(roundedRect: rect.insetBy(dx: 0.5, dy: 0.5), xRadius: 4, yRadius: 4)
+        border.lineWidth = 1
+        border.stroke()
+
+        let textOrigin = NSPoint(x: rect.minX + (rect.width - size.width) / 2,
+                                 y: rect.minY + (rect.height - size.height) / 2)
+        text.draw(at: textOrigin)
     }
 }

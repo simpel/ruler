@@ -108,7 +108,7 @@ final class MeasureOverlayWindow: NSPanel {
         hasShadow = false
         isReleasedWhenClosed = false
         contentView = measureView
-        level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 4)
+        level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 6)
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle, .stationary]
     }
 

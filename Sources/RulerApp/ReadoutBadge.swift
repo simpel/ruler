@@ -277,14 +277,14 @@ enum ReadoutBadge {
     }
 
     /// Creates an unrasterized, resolution-independent vector SF Symbol tinted with palette colors.
-    private static func makeVectorSymbol(_ name: String, pointSize: CGFloat, weight: NSFont.Weight, color: NSColor) -> NSImage? {
+    static func makeVectorSymbol(_ name: String, pointSize: CGFloat, weight: NSFont.Weight, color: NSColor) -> NSImage? {
         let config = NSImage.SymbolConfiguration(pointSize: pointSize, weight: weight)
             .applying(NSImage.SymbolConfiguration(paletteColors: [color]))
         return NSImage(systemSymbolName: name, accessibilityDescription: nil)?.withSymbolConfiguration(config)
     }
 
     /// Draws a vector symbol centered within a slot rectangle without distortion.
-    private static func drawSymbol(_ sym: NSImage, centeredIn slotRect: NSRect) {
+    static func drawSymbol(_ sym: NSImage, centeredIn slotRect: NSRect) {
         let size = sym.size
         let targetRect = NSRect(
             x: (slotRect.minX + (slotRect.width - size.width) / 2.0).rounded(),

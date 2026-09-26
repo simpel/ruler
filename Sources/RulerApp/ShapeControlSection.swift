@@ -5,10 +5,10 @@ final class ShapeControlSection: NSView {
 
     private let universalFontSize: CGFloat = 12
     private let textSection = Palette.guideLine
+    private let textPrimary = NSColor(calibratedWhite: 0.98, alpha: 1.0)
 
-    // Draw mode selector (what the measure gesture draws)
-    private let drawModeSegment = NSSegmentedControl(labels: ["Rectangle", "Circle"],
-                                                     trackingMode: .selectOne, target: nil, action: nil)
+    // Draw mode selector (toggles between Rectangle and Circle)
+    private let switchShape = NSSwitch()
 
     private var isSyncing = false
 
@@ -28,8 +28,8 @@ final class ShapeControlSection: NSView {
     }
 
     private func setupUI() {
-        drawModeSegment.controlSize = .regular
-        drawModeSegment.font = NSFont.systemFont(ofSize: universalFontSize, weight: .regular)
+        switchShape.controlSize = .small
+        switchShape.toolTip = "Toggle between Rectangle (off) and Circle (on) shape drawing"
 
         let stack = NSStackView()
         stack.orientation = .vertical
@@ -46,26 +46,35 @@ final class ShapeControlSection: NSView {
         ])
 
         stack.addArrangedSubview(makeSectionLabel("SHAPES"))
-        drawModeSegment.translatesAutoresizingMaskIntoConstraints = false
-        drawModeSegment.widthAnchor.constraint(equalToConstant: 284).isActive = true
-        stack.addArrangedSubview(drawModeSegment)
+
+        let label = NSTextField(labelWithString: "Circle")
+        label.font = NSFont.systemFont(ofSize: universalFontSize, weight: .regular)
+        label.textColor = textPrimary
+
+        let row = NSStackView(views: [label, switchShape])
+        row.orientation = .horizontal
+        row.distribution = .equalSpacing
+        row.alignment = .centerY
+        row.translatesAutoresizingMaskIntoConstraints = false
+        row.widthAnchor.constraint(equalToConstant: 284).isActive = true
+
+        stack.addArrangedSubview(row)
     }
 
     private func bindActions() {
-        drawModeSegment.target = self
-        drawModeSegment.action = #selector(onDrawModeChanged)
+        switchShape.target = self
+        switchShape.action = #selector(onToggleShape)
     }
 
     func syncWithSettings() {
         guard !isSyncing else { return }
         isSyncing = true
         defer { isSyncing = false }
-        drawModeSegment.selectedSegment = Settings.shared.drawShapeType == .circle ? 1 : 0
+        switchShape.state = Settings.shared.drawShapeType == .circle ? .on : .off
     }
 
-    @objc private func onDrawModeChanged() {
-        let selected: ShapeType = drawModeSegment.selectedSegment == 1 ? .circle : .rectangle
-        Settings.shared.drawShapeType = selected
+    @objc private func onToggleShape() {
+        Settings.shared.drawShapeType = switchShape.state == .on ? .circle : .rectangle
         RulerController.shared.activateContext()
     }
 }

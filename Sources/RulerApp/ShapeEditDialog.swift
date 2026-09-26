@@ -9,9 +9,6 @@ final class ShapeEditDialogController: NSObject, NSWindowDelegate {
     private var window: NSPanel?
     private weak var targetWindow: MeasurementWindow?
 
-    private let titleLabel = NSTextField(labelWithString: "Shape Settings")
-    private let shapeTypeBadge = NSTextField(labelWithString: "RECTANGLE")
-
     private let xField = ScrubbableField()
     private let yField = ScrubbableField()
     private let wField = ScrubbableField()
@@ -44,7 +41,7 @@ final class ShapeEditDialogController: NSObject, NSWindowDelegate {
     }
 
     private func makeWindow() -> NSPanel {
-        let panel = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 280, height: 240),
+        let panel = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 280, height: 104),
                             styleMask: [.titled, .closable, .fullSizeContentView, .nonactivatingPanel],
                             backing: .buffered,
                             defer: false)
@@ -80,7 +77,7 @@ final class ShapeEditDialogController: NSObject, NSWindowDelegate {
         rootStack.orientation = .vertical
         rootStack.alignment = .leading
         rootStack.spacing = 10
-        rootStack.edgeInsets = NSEdgeInsets(top: 20, left: 18, bottom: 20, right: 18)
+        rootStack.edgeInsets = NSEdgeInsets(top: 32, left: 18, bottom: 18, right: 18)
         rootStack.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(rootStack)
 
@@ -90,34 +87,6 @@ final class ShapeEditDialogController: NSObject, NSWindowDelegate {
             rootStack.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             rootStack.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
-
-        titleLabel.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
-        titleLabel.textColor = NSColor(calibratedWhite: 0.98, alpha: 1.0)
-
-        shapeTypeBadge.font = NSFont.systemFont(ofSize: 10, weight: .bold)
-        shapeTypeBadge.textColor = Palette.guideLine
-
-        let closeBtn = NSButton()
-        closeBtn.bezelStyle = .inline
-        closeBtn.isBordered = false
-        closeBtn.image = NSImage(systemSymbolName: "xmark", accessibilityDescription: "Close")?
-            .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 10, weight: .bold))
-        closeBtn.contentTintColor = NSColor.white.withAlphaComponent(0.7)
-        closeBtn.target = self
-        closeBtn.action = #selector(onClose)
-        closeBtn.widthAnchor.constraint(equalToConstant: 18).isActive = true
-        closeBtn.heightAnchor.constraint(equalToConstant: 18).isActive = true
-
-        let titleGroup = NSStackView(views: [titleLabel, shapeTypeBadge])
-        titleGroup.orientation = .horizontal
-        titleGroup.spacing = 8
-
-        let headerRow = NSStackView(views: [titleGroup, closeBtn])
-        headerRow.orientation = .horizontal
-        headerRow.distribution = .equalSpacing
-        headerRow.translatesAutoresizingMaskIntoConstraints = false
-        headerRow.widthAnchor.constraint(equalToConstant: 244).isActive = true
-        rootStack.addArrangedSubview(headerRow)
 
         let makeRow = { [weak self] (label1: String, field1: ScrubbableField, label2: String, field2: ScrubbableField) -> NSStackView in
             guard let self else { return NSStackView() }
@@ -160,10 +129,7 @@ final class ShapeEditDialogController: NSObject, NSWindowDelegate {
             return row
         }
 
-        rootStack.addArrangedSubview(makeSectionLabel("POSITION (SCREEN)"))
         rootStack.addArrangedSubview(makeRow("X", xField, "Y", yField))
-
-        rootStack.addArrangedSubview(makeSectionLabel("DIMENSIONS"))
         rootStack.addArrangedSubview(makeRow("W", wField, "H", hField))
 
         // Radius row for circles
@@ -212,8 +178,16 @@ final class ShapeEditDialogController: NSObject, NSWindowDelegate {
     }
 
     private func populateFields(from target: MeasurementWindow) {
-        shapeTypeBadge.stringValue = target.shapeType == .circle ? "CIRCLE" : "RECTANGLE"
-        rRow?.isHidden = target.shapeType != .circle
+        let isCircle = target.shapeType == .circle
+        rRow?.isHidden = !isCircle
+
+        let h: CGFloat = isCircle ? 136 : 104
+        if let win = window {
+            var f = win.frame
+            f.origin.y += f.size.height - h
+            f.size.height = h
+            win.setFrame(f, display: true, animate: false)
+        }
 
         let anchor = target.anchor
         let current = target.current
@@ -325,116 +299,6 @@ extension ShapeEditDialogController: NSTextFieldDelegate {
         guard !isSyncingFields, let field = obj.object as? NSTextField else { return }
         syncCircleFields(modified: field)
         applyLive()
-    }
-}
-
-/// A text label that enables click-drag scrubbing of an associated numeric field.
-private final class ScrubbableLabel: NSTextField {
-    var onScrubDelta: ((CGFloat) -> Void)?
-    private var startMouseX: CGFloat = 0
-    private var trackingArea: NSTrackingArea?
-
-    override func resetCursorRects() {
-        discardCursorRects()
-        addCursorRect(bounds, cursor: .horizontalScrub)
-    }
-
-    override func updateTrackingAreas() {
-        super.updateTrackingAreas()
-        if let trackingArea {
-            removeTrackingArea(trackingArea)
-        }
-        let area = NSTrackingArea(rect: bounds,
-                                  options: [.cursorUpdate, .activeAlways, .inVisibleRect],
-                                  owner: self,
-                                  userInfo: nil)
-        addTrackingArea(area)
-        trackingArea = area
-    }
-
-    override func cursorUpdate(with event: NSEvent) {
-        NSCursor.horizontalScrub.set()
-    }
-
-    override func mouseDown(with event: NSEvent) {
-        startMouseX = NSEvent.mouseLocation.x
-        NSCursor.horizontalScrub.push()
-        while true {
-            guard let nextEvent = window?.nextEvent(matching: [.leftMouseDragged, .leftMouseUp]) else { break }
-            if nextEvent.type == .leftMouseUp { break }
-            let currentX = NSEvent.mouseLocation.x
-            let stepMultiplier: CGFloat = nextEvent.modifierFlags.contains(.shift) ? 10.0 : 1.0
-            let delta = (currentX - startMouseX) * stepMultiplier
-            startMouseX = currentX
-            onScrubDelta?(delta)
-        }
-        NSCursor.pop()
-    }
-}
-
-/// An editable text field that supports direct typing or horizontal drag scrubbing.
-private final class ScrubbableField: NSTextField {
-    var onScrubDelta: ((CGFloat) -> Void)?
-    private var trackingArea: NSTrackingArea?
-
-    override func resetCursorRects() {
-        if currentEditor() == nil {
-            discardCursorRects()
-            addCursorRect(bounds, cursor: .horizontalScrub)
-        } else {
-            super.resetCursorRects()
-        }
-    }
-
-    override func updateTrackingAreas() {
-        super.updateTrackingAreas()
-        if let trackingArea {
-            removeTrackingArea(trackingArea)
-        }
-        let area = NSTrackingArea(rect: bounds,
-                                  options: [.cursorUpdate, .activeAlways, .inVisibleRect],
-                                  owner: self,
-                                  userInfo: nil)
-        addTrackingArea(area)
-        trackingArea = area
-    }
-
-    override func cursorUpdate(with event: NSEvent) {
-        if currentEditor() == nil {
-            NSCursor.horizontalScrub.set()
-        } else {
-            super.cursorUpdate(with: event)
-        }
-    }
-
-    override func mouseDown(with event: NSEvent) {
-        let startLocation = NSEvent.mouseLocation
-        var hasDragged = false
-        var lastMouseX = startLocation.x
-
-        while true {
-            guard let nextEvent = window?.nextEvent(matching: [.leftMouseDragged, .leftMouseUp]) else { break }
-            if nextEvent.type == .leftMouseUp {
-                if !hasDragged {
-                    super.mouseDown(with: event)
-                } else {
-                    NSCursor.pop()
-                }
-                break
-            }
-            let currentX = NSEvent.mouseLocation.x
-            if !hasDragged && abs(currentX - startLocation.x) > 2 {
-                hasDragged = true
-                NSCursor.horizontalScrub.push()
-                window?.makeFirstResponder(nil)
-            }
-            if hasDragged {
-                let stepMultiplier: CGFloat = nextEvent.modifierFlags.contains(.shift) ? 10.0 : 1.0
-                let delta = (currentX - lastMouseX) * stepMultiplier
-                lastMouseX = currentX
-                onScrubDelta?(delta)
-            }
-        }
     }
 }
 

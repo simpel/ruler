@@ -25,43 +25,64 @@ final class MeasureView: NSView {
     var moveHot = false {
         didSet { if oldValue != moveHot { needsDisplay = true } }
     }
+    var centerMoveHot = false {
+        didSet { if oldValue != centerMoveHot { needsDisplay = true } }
+    }
     var tooltipHot = false {
         didSet { if oldValue != tooltipHot { needsDisplay = true } }
     }
     var outlineHot = false {
         didSet { if oldValue != outlineHot { needsDisplay = true } }
     }
+    var hoveredDot: ResizeDotKind? {
+        didSet { if oldValue != hoveredDot { needsDisplay = true } }
+    }
 
     /// Where action buttons and badge components were last drawn, in view coordinates.
     private(set) var closeRect: NSRect?
     private(set) var editRect: NSRect?
     private(set) var moveRect: NSRect?
+    private(set) var centerMoveRect: NSRect?
     private(set) var badgeRect: NSRect?
     private(set) var metricHits: [MetricHitTarget] = []
+    private(set) var activeDots: [ResizeDot] = []
     private(set) var shapeBox: NSRect = .zero
 
+    var isInteracting: Bool {
+        isDragging || isScrubbing || isResizingDot
+    }
+
     // Dragging shape state
-    private var isDragging = false
-    private var dragStartMouse: NSPoint = .zero
-    private var dragStartAnchor: NSPoint = .zero
-    private var dragStartCurrent: NSPoint = .zero
+    var isDragging = false
+    var dragStartMouse: NSPoint = .zero
+    var dragStartAnchor: NSPoint = .zero
+    var dragStartCurrent: NSPoint = .zero
+
+    // Resizing shape via dot state
+    var isResizingDot = false
+    var activeResizeDot: ResizeDotKind?
+    var dotDragStartMouse: NSPoint = .zero
+    var dotDragStartAnchor: NSPoint = .zero
+    var dotDragStartCurrent: NSPoint = .zero
+
+    func resizeDot(at point: NSPoint) -> ResizeDot? {
+        guard showsClose else { return nil }
+        return activeDots.first { $0.hitRect.contains(point) }
+    }
 
     // Scrubbing metric state
-    private var isScrubbing = false
-    private var activeMetric: BadgeMetric?
-    private var scrubStartMouse: NSPoint = .zero
-    private var scrubStartAnchor: NSPoint = .zero
-    private var scrubStartCurrent: NSPoint = .zero
+    var isScrubbing = false
+    var activeMetric: BadgeMetric?
+    var scrubStartMouse: NSPoint = .zero
+    var scrubStartAnchor: NSPoint = .zero
+    var scrubStartCurrent: NSPoint = .zero
+    var trackingArea: NSTrackingArea?
 
     override var isOpaque: Bool { false }
 
     /// Computes the exact perimeter/circumference of an ellipse (or circle) using Ramanujan's formula.
     static func ellipseCircumference(width: CGFloat, height: CGFloat) -> CGFloat {
-        let a = width / 2.0
-        let b = height / 2.0
-        guard a > 0 || b > 0 else { return 0 }
-        let h = pow(a - b, 2) / max(0.0001, pow(a + b, 2))
-        return CGFloat.pi * (a + b) * (1.0 + (3.0 * h) / (10.0 + sqrt(4.0 - 3.0 * h)))
+        ShapeType.ellipseCircumference(width: width, height: height)
     }
 
     func isOverOutline(_ localPoint: NSPoint) -> Bool {
@@ -76,6 +97,8 @@ final class MeasureView: NSView {
                 drawRectangleMeasurement(from: a, to: current)
             }
         } else {
+            activeDots = []
+            centerMoveRect = nil
             let x = (current.x - screenOrigin.x) * scale
             let y = (screenOrigin.y - current.y) * scale
             let layout = ReadoutBadge.draw(shapeType: nil,
@@ -115,10 +138,21 @@ final class MeasureView: NSView {
         Palette.live.setStroke()
         line.stroke()
 
-        for p in [a, b] {
-            let dot = NSRect(x: p.x - 2.5, y: p.y - 2.5, width: 5, height: 5)
-            Palette.live.setFill()
-            NSBezierPath(ovalIn: dot).fill()
+        let dots = ShapeResizeHandle.dots(shapeType: .rectangle, anchor: a, current: b, box: box)
+        activeDots = dots
+        for dot in dots {
+            let isHovered = showsClose && (hoveredDot == dot.kind)
+            ShapeResizeHandle.drawDot(at: dot.point, isHovered: isHovered)
+        }
+
+        // Center cross mark
+        let center = NSPoint(x: box.midX, y: box.midY)
+        ShapeCenterHandle.draw(at: center)
+
+        if showsClose {
+            centerMoveRect = ShapeCenterHandle.hitRect(for: box)
+        } else {
+            centerMoveRect = nil
         }
 
         let posX = (box.minX - screenOrigin.x) * scale
@@ -161,16 +195,22 @@ final class MeasureView: NSView {
         Palette.live.withAlphaComponent(0.10).setFill()
         NSBezierPath(ovalIn: box).fill()
 
-        // Center crosshair mark
+        // Center cross mark
         let center = NSPoint(x: box.midX, y: box.midY)
-        let cross = NSBezierPath()
-        cross.lineWidth = 1
-        cross.move(to: NSPoint(x: center.x - 4, y: center.y))
-        cross.line(to: NSPoint(x: center.x + 4, y: center.y))
-        cross.move(to: NSPoint(x: center.x, y: center.y - 4))
-        cross.line(to: NSPoint(x: center.x, y: center.y + 4))
-        Palette.live.withAlphaComponent(0.65).setStroke()
-        cross.stroke()
+        ShapeCenterHandle.draw(at: center)
+
+        if showsClose {
+            centerMoveRect = ShapeCenterHandle.hitRect(for: box)
+        } else {
+            centerMoveRect = nil
+        }
+
+        let dots = ShapeResizeHandle.dots(shapeType: .circle, anchor: a, current: b, box: box)
+        activeDots = dots
+        for dot in dots {
+            let isHovered = showsClose && (hoveredDot == dot.kind)
+            ShapeResizeHandle.drawDot(at: dot.point, isHovered: isHovered)
+        }
 
         let posX = (box.minX - screenOrigin.x) * scale
         let posY = (screenOrigin.y - box.maxY) * scale
@@ -199,216 +239,5 @@ final class MeasureView: NSView {
         editRect = layout.editRect
         moveRect = layout.moveRect
         metricHits = layout.metricHits
-    }
-
-    override func resetCursorRects() {
-        super.resetCursorRects()
-        guard showsClose else { return }
-
-        if let closeRect {
-            addCursorRect(closeRect, cursor: .pointingHand)
-        }
-        if let editRect {
-            addCursorRect(editRect, cursor: .pointingHand)
-        }
-        if let moveRect {
-            addCursorRect(moveRect, cursor: .openHand)
-        }
-        for hit in metricHits {
-            addCursorRect(hit.rect, cursor: .horizontalScrub)
-        }
-        if let badgeRect {
-            addCursorRect(badgeRect, cursor: .arrow)
-        }
-    }
-
-    override func mouseDown(with event: NSEvent) {
-        let loc = convert(event.locationInWindow, from: nil)
-
-        // 1. Close button
-        if let closeRect, closeRect.insetBy(dx: -4, dy: -4).contains(loc) {
-            onClose?()
-            return
-        }
-
-        // 2. Edit button
-        if let editRect, editRect.insetBy(dx: -4, dy: -4).contains(loc) {
-            onEdit?()
-            return
-        }
-
-        // 3. Number hit testing: double click opens settings, single click/drag scrubs
-        if let hit = metricHits.first(where: { $0.rect.contains(loc) }) {
-            if event.clickCount == 2 {
-                onEdit?()
-                return
-            }
-            startScrub(metric: hit.metric)
-            return
-        }
-
-        // 4. Move button
-        if let moveRect, moveRect.insetBy(dx: -4, dy: -4).contains(loc) {
-            startDrag()
-            return
-        }
-
-        // 5. Badge background or outline
-        if let badgeRect, badgeRect.contains(loc) {
-            startDrag()
-            return
-        }
-        if isOverOutline(loc) {
-            startDrag()
-            return
-        }
-    }
-
-    private func startDrag() {
-        guard let owner else { return }
-        isDragging = true
-        dragStartMouse = NSEvent.mouseLocation
-        dragStartAnchor = owner.anchor
-        dragStartCurrent = owner.current
-        NSCursor.closedHand.push()
-    }
-
-    private func startScrub(metric: BadgeMetric) {
-        guard let owner else { return }
-        isScrubbing = true
-        activeMetric = metric
-        scrubStartMouse = NSEvent.mouseLocation
-        scrubStartAnchor = owner.anchor
-        scrubStartCurrent = owner.current
-        NSCursor.horizontalScrub.push()
-        needsDisplay = true
-    }
-
-    override func mouseDragged(with event: NSEvent) {
-        if isScrubbing, let owner, let metric = activeMetric {
-            let mouse = NSEvent.mouseLocation
-            let stepMultiplier: CGFloat = event.modifierFlags.contains(.shift) ? 10.0 : 1.0
-            let rawDelta = (mouse.x - scrubStartMouse.x) * stepMultiplier
-            let delta = (rawDelta / scale).rounded()
-
-            let anchor = scrubStartAnchor
-            let current = scrubStartCurrent
-            let minX = min(anchor.x, current.x)
-            let maxX = max(anchor.x, current.x)
-            let minY = min(anchor.y, current.y)
-            let maxY = max(anchor.y, current.y)
-            let origWidth = maxX - minX
-            let origHeight = maxY - minY
-
-            var newAnchor = anchor
-            var newCurrent = current
-
-            switch metric {
-            case .width:
-                let newW = max(5, origWidth + delta)
-                if current.x >= anchor.x {
-                    newAnchor.x = minX
-                    newCurrent.x = minX + newW
-                } else {
-                    newAnchor.x = minX + newW
-                    newCurrent.x = minX
-                }
-            case .height:
-                let newH = max(5, origHeight + delta)
-                if current.y >= anchor.y {
-                    newAnchor.y = minY
-                    newCurrent.y = minY + newH
-                } else {
-                    newAnchor.y = minY + newH
-                    newCurrent.y = minY
-                }
-            case .radius:
-                let origRadius = max(1, (origWidth + origHeight) / 4.0)
-                let newRadius = max(3, origRadius + delta)
-                let s = newRadius / origRadius
-                let newW = max(5, origWidth * s)
-                let newH = max(5, origHeight * s)
-                let midX = (anchor.x + current.x) / 2.0
-                let midY = (anchor.y + current.y) / 2.0
-                let halfW = newW / 2.0
-                let halfH = newH / 2.0
-
-                if current.x >= anchor.x {
-                    newAnchor.x = (midX - halfW).rounded()
-                    newCurrent.x = (midX + halfW).rounded()
-                } else {
-                    newAnchor.x = (midX + halfW).rounded()
-                    newCurrent.x = (midX - halfW).rounded()
-                }
-
-                if current.y >= anchor.y {
-                    newAnchor.y = (midY - halfH).rounded()
-                    newCurrent.y = (midY + halfH).rounded()
-                } else {
-                    newAnchor.y = (midY + halfH).rounded()
-                    newCurrent.y = (midY - halfH).rounded()
-                }
-
-            case .circumference:
-                let origCirc = max(1, MeasureView.ellipseCircumference(width: origWidth, height: origHeight))
-                let newCirc = max(18, origCirc + delta)
-                let s = newCirc / origCirc
-                let newW = max(5, origWidth * s)
-                let newH = max(5, origHeight * s)
-                let midX = (anchor.x + current.x) / 2.0
-                let midY = (anchor.y + current.y) / 2.0
-                let halfW = newW / 2.0
-                let halfH = newH / 2.0
-
-                if current.x >= anchor.x {
-                    newAnchor.x = (midX - halfW).rounded()
-                    newCurrent.x = (midX + halfW).rounded()
-                } else {
-                    newAnchor.x = (midX + halfW).rounded()
-                    newCurrent.x = (midX - halfW).rounded()
-                }
-
-                if current.y >= anchor.y {
-                    newAnchor.y = (midY - halfH).rounded()
-                    newCurrent.y = (midY + halfH).rounded()
-                } else {
-                    newAnchor.y = (midY + halfH).rounded()
-                    newCurrent.y = (midY - halfH).rounded()
-                }
-            case .x:
-                newAnchor.x = anchor.x + delta
-                newCurrent.x = current.x + delta
-            case .y:
-                // Dragging right increases displayed posY (distance from top), moving shape down
-                newAnchor.y = anchor.y - delta
-                newCurrent.y = current.y - delta
-            }
-
-            owner.move(toAnchor: newAnchor, current: newCurrent)
-            ShapeEditDialogController.shared.syncIfActive(for: owner)
-            return
-        }
-
-        if isDragging, let owner {
-            let mouse = NSEvent.mouseLocation
-            let dx = mouse.x - dragStartMouse.x
-            let dy = mouse.y - dragStartMouse.y
-            owner.move(toAnchor: NSPoint(x: (dragStartAnchor.x + dx).rounded(), y: (dragStartAnchor.y + dy).rounded()),
-                       current: NSPoint(x: (dragStartCurrent.x + dx).rounded(), y: (dragStartCurrent.y + dy).rounded()))
-            ShapeEditDialogController.shared.syncIfActive(for: owner)
-        }
-    }
-
-    override func mouseUp(with event: NSEvent) {
-        if isScrubbing {
-            isScrubbing = false
-            activeMetric = nil
-            NSCursor.pop()
-            needsDisplay = true
-        }
-        if isDragging {
-            isDragging = false
-            NSCursor.pop()
-        }
     }
 }
