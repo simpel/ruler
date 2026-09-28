@@ -146,6 +146,13 @@ final class DrawingCanvasView: NSView {
         isDragging = false
     }
 
+    override func flagsChanged(with event: NSEvent) {
+        super.flagsChanged(with: event)
+        if isDragging, dragStart != nil {
+            mouseDragged(with: event)
+        }
+    }
+
     override func mouseDragged(with event: NSEvent) {
         guard let start = dragStart else { return }
         let current = NSEvent.mouseLocation
@@ -153,15 +160,50 @@ final class DrawingCanvasView: NSView {
 
         if dist >= dragThreshold {
             isDragging = true
-            let constrain = event.modifierFlags.contains(.shift)
+            let isShiftHeld = event.modifierFlags.contains(.shift)
+            let isCommandHeld = event.modifierFlags.contains(.command)
             let shape = Settings.shared.drawShapeType
-            let end: NSPoint
+
+            let endpoints = computeEndpoints(start: start,
+                                             mouse: current,
+                                             fromCenter: isCommandHeld,
+                                             constrain: isShiftHeld,
+                                             shape: shape)
+
+            RulerController.shared.updateLiveMeasurement(anchor: endpoints.anchor,
+                                                         current: endpoints.current,
+                                                         shapeType: shape)
+        }
+    }
+
+    private func computeEndpoints(start: NSPoint,
+                                  mouse: NSPoint,
+                                  fromCenter: Bool,
+                                  constrain: Bool,
+                                  shape: ShapeType) -> (anchor: NSPoint, current: NSPoint) {
+        if fromCenter {
             if shape == .line {
-                end = constrain ? RulerController.constrainLine(anchor: start, current: current) : current
+                let target = constrain ? RulerController.constrainLine(anchor: start, current: mouse) : mouse
+                let dx = target.x - start.x
+                let dy = target.y - start.y
+                return (NSPoint(x: (start.x - dx).rounded(), y: (start.y - dy).rounded()),
+                        NSPoint(x: (start.x + dx).rounded(), y: (start.y + dy).rounded()))
             } else {
-                end = constrain ? RulerController.constrainSquareOrCircle(anchor: start, current: current) : current
+                let target = constrain ? RulerController.constrainSquareOrCircle(anchor: start, current: mouse) : mouse
+                let dx = target.x - start.x
+                let dy = target.y - start.y
+                return (NSPoint(x: (start.x - dx).rounded(), y: (start.y - dy).rounded()),
+                        NSPoint(x: (start.x + dx).rounded(), y: (start.y + dy).rounded()))
             }
-            RulerController.shared.updateLiveMeasurement(anchor: start, current: end, shapeType: shape)
+        } else {
+            let anchor = start
+            if shape == .line {
+                let end = constrain ? RulerController.constrainLine(anchor: start, current: mouse) : mouse
+                return (anchor, end)
+            } else {
+                let end = constrain ? RulerController.constrainSquareOrCircle(anchor: start, current: mouse) : mouse
+                return (anchor, end)
+            }
         }
     }
 
@@ -172,17 +214,21 @@ final class DrawingCanvasView: NSView {
         isDragging = false
 
         if wasDragging, let start {
-            let current = NSEvent.mouseLocation
-            let constrain = event.modifierFlags.contains(.shift)
+            let mouse = NSEvent.mouseLocation
+            let isShiftHeld = event.modifierFlags.contains(.shift)
+            let isCommandHeld = event.modifierFlags.contains(.command)
             let shape = Settings.shared.drawShapeType
-            let end: NSPoint
-            if shape == .line {
-                end = constrain ? RulerController.constrainLine(anchor: start, current: current) : current
-            } else {
-                end = constrain ? RulerController.constrainSquareOrCircle(anchor: start, current: current) : current
-            }
-            if hypot(end.x - start.x, end.y - start.y) > 6 {
-                MeasurementStore.shared.add(anchor: start, current: end, shapeType: shape)
+
+            let endpoints = computeEndpoints(start: start,
+                                             mouse: mouse,
+                                             fromCenter: isCommandHeld,
+                                             constrain: isShiftHeld,
+                                             shape: shape)
+
+            if hypot(endpoints.current.x - endpoints.anchor.x, endpoints.current.y - endpoints.anchor.y) > 6 {
+                MeasurementStore.shared.add(anchor: endpoints.anchor,
+                                            current: endpoints.current,
+                                            shapeType: shape)
             }
             RulerController.shared.clearLiveMeasurement()
         } else {

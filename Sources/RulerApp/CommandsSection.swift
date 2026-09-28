@@ -77,7 +77,10 @@ final class CommandsSection: NSView {
         stack.setCustomSpacing(3, after: shapesGroup)
 
         let shapesCommands: [(String, String)] = [
-            ("Drag", "Draw shape or line (hold ⇧ for 1:1/axis)"),
+            ("Drag", "Draw shape or line"),
+            ("⌘ Drag", "Draw out from center"),
+            ("⇧ Drag", "Keep 1:1 / 45° angle"),
+            ("⇧⌘ Drag", "Draw out from center 1:1"),
         ]
         for (gesture, desc) in shapesCommands {
             stack.addArrangedSubview(makeRow(gesture: gesture, description: desc))

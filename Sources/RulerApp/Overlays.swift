@@ -100,7 +100,7 @@ final class MeasureOverlayWindow: NSPanel {
 
     /// `anchor` is nil while the gesture is only armed (no button pressed yet).
     func show(anchor: NSPoint?, current: NSPoint, scale: CGFloat, screen: NSScreen, shapeType: ShapeType = .rectangle) {
-        let padding: CGFloat = 120
+        let padding: CGFloat = 200
         var box = NSRect(origin: current, size: .zero)
         if let a = anchor {
             box = NSRect(x: min(a.x, current.x), y: min(a.y, current.y),
@@ -113,13 +113,15 @@ final class MeasureOverlayWindow: NSPanel {
         if frame != self.frame { setFrame(frame, display: false) }
 
         measureView.shapeType = shapeType
-        measureView.anchor = anchor.map { NSPoint(x: $0.x - frame.minX, y: $0.y - frame.minY) }
-        measureView.current = NSPoint(x: current.x - frame.minX, y: current.y - frame.minY)
+        measureView.anchor = anchor.map { NSPoint(x: $0.x - self.frame.minX, y: $0.y - self.frame.minY) }
+        measureView.current = NSPoint(x: current.x - self.frame.minX, y: current.y - self.frame.minY)
         measureView.scale = scale
         measureView.showsClose = false
         let zero = RulerController.shared.globalZeroOrigin(on: screen)
-        measureView.screenOrigin = NSPoint(x: zero.x - frame.minX,
-                                           y: zero.y - frame.minY)
+        measureView.screenOrigin = NSPoint(x: zero.x - self.frame.minX,
+                                           y: zero.y - self.frame.minY)
+        measureView.displayScreenOrigin = NSPoint(x: screen.frame.minX - self.frame.minX,
+                                                  y: screen.frame.maxY - self.frame.minY)
         measureView.needsDisplay = true
 
         if !isVisible { orderFrontRegardless() }

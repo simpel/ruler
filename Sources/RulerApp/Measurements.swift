@@ -5,7 +5,7 @@ import AppKit
 final class MeasurementWindow: NSPanel {
 
     /// Room around the shape for the readout badge and the dismiss button.
-    private static let padding: CGFloat = 120
+    private static let padding: CGFloat = 200
 
     private let measureView = MeasureView()
     let shapeType: ShapeType
@@ -66,17 +66,17 @@ final class MeasurementWindow: NSPanel {
                        width: frame.width.rounded(), height: frame.height.rounded())
         setFrame(frame, display: false)
 
-        measureView.anchor = NSPoint(x: anchor.x - frame.minX, y: anchor.y - frame.minY)
-        measureView.current = NSPoint(x: current.x - frame.minX, y: current.y - frame.minY)
+        measureView.anchor = NSPoint(x: anchor.x - self.frame.minX, y: anchor.y - self.frame.minY)
+        measureView.current = NSPoint(x: current.x - self.frame.minX, y: current.y - self.frame.minY)
         measureView.scale = unitsPerPoint()
 
         let screen = NSScreen.screens.first { $0.frame.contains(current) } ?? NSScreen.main ?? NSScreen.screens.first
         let zero = RulerController.shared.globalZeroOrigin(on: screen)
-        measureView.screenOrigin = NSPoint(x: zero.x - frame.minX,
-                                           y: zero.y - frame.minY)
+        measureView.screenOrigin = NSPoint(x: zero.x - self.frame.minX,
+                                           y: zero.y - self.frame.minY)
         if let screen {
-            measureView.displayScreenOrigin = NSPoint(x: screen.frame.minX - frame.minX,
-                                                      y: screen.frame.maxY - frame.minY)
+            measureView.displayScreenOrigin = NSPoint(x: screen.frame.minX - self.frame.minX,
+                                                      y: screen.frame.maxY - self.frame.minY)
         }
         measureView.needsDisplay = true
         ShapeEditDialogController.shared.syncIfActive(for: self)
@@ -93,11 +93,11 @@ final class MeasurementWindow: NSPanel {
         measureView.scale = unitsPerPoint()
         let screen = NSScreen.screens.first { $0.frame.contains(current) } ?? NSScreen.main ?? NSScreen.screens.first
         let zero = RulerController.shared.globalZeroOrigin(on: screen)
-        measureView.screenOrigin = NSPoint(x: zero.x - frame.minX,
-                                           y: zero.y - frame.minY)
+        measureView.screenOrigin = NSPoint(x: zero.x - self.frame.minX,
+                                           y: zero.y - self.frame.minY)
         if let screen {
-            measureView.displayScreenOrigin = NSPoint(x: screen.frame.minX - frame.minX,
-                                                      y: screen.frame.maxY - frame.minY)
+            measureView.displayScreenOrigin = NSPoint(x: screen.frame.minX - self.frame.minX,
+                                                      y: screen.frame.maxY - self.frame.minY)
         }
         measureView.needsDisplay = true
         ShapeEditDialogController.shared.syncIfActive(for: self)

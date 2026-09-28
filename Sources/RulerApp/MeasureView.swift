@@ -13,6 +13,22 @@ final class MeasureView: NSView {
     /// Top-left corner of the display screen, in this view's coordinates.
     var displayScreenOrigin: NSPoint = .zero
 
+    /// Usable screen frame (excluding menu bar and dock) expressed in this view's coordinate space.
+    var visibleScreenRectInView: NSRect? {
+        let win = window ?? owner
+        guard let win else { return nil }
+        let scr = win.screen
+            ?? NSScreen.screens.first { $0.frame.intersects(win.frame) }
+            ?? NSScreen.main
+            ?? NSScreen.screens.first
+        guard let scr else { return nil }
+        let vf = scr.visibleFrame
+        return NSRect(x: vf.minX - win.frame.minX,
+                      y: vf.minY - win.frame.minY,
+                      width: vf.width,
+                      height: vf.height)
+    }
+
     /// Kept measurements carry action buttons (move, edit, close); live drawing does not.
     var showsClose = false
     var onClose: (() -> Void)?
@@ -114,7 +130,8 @@ final class MeasureView: NSView {
                                            posX: x,
                                            posY: y,
                                            in: bounds,
-                                           near: current)
+                                           near: current,
+                                           screenVisibleRect: visibleScreenRectInView)
             badgeRect = layout.badgeRect
             closeRect = nil
             editRect = nil
@@ -180,6 +197,7 @@ final class MeasureView: NSView {
                                        length: length,
                                        in: bounds,
                                        forShapeBox: box,
+                                       screenVisibleRect: visibleScreenRectInView,
                                        isHovered: tooltipHot,
                                        moveHot: moveHot,
                                        editHot: editHot,
@@ -249,6 +267,7 @@ final class MeasureView: NSView {
                                        height: height,
                                        in: bounds,
                                        forShapeBox: box,
+                                       screenVisibleRect: visibleScreenRectInView,
                                        isHovered: tooltipHot,
                                        moveHot: moveHot,
                                        editHot: editHot,
@@ -302,18 +321,22 @@ final class MeasureView: NSView {
         let radius = (width + height) / 4.0
         let circumference = MeasureView.ellipseCircumference(width: width, height: height)
 
+        let isActualCircle = abs(width - height) < 1.0
+        let showDims = !isActualCircle
+
         let layout = ReadoutBadge.draw(shapeType: .circle,
                                        showsActions: showsClose,
                                        posX: posX,
                                        posY: posY,
                                        screenX: scrX,
                                        screenY: scrY,
-                                       width: width,
-                                       height: height,
+                                       width: showDims ? width : nil,
+                                       height: showDims ? height : nil,
                                        radius: radius,
                                        circumference: circumference,
                                        in: bounds,
                                        forShapeBox: box,
+                                       screenVisibleRect: visibleScreenRectInView,
                                        isHovered: tooltipHot,
                                        moveHot: moveHot,
                                        editHot: editHot,

@@ -231,13 +231,31 @@ final class RulerController {
         }
     }
 
-    static func constrainSquareOrCircle(anchor: NSPoint, current: NSPoint) -> NSPoint {
+    static func constrainAspectRatio(anchor: NSPoint, current: NSPoint, ratio: CGFloat) -> NSPoint {
         let dx = current.x - anchor.x
         let dy = current.y - anchor.y
-        let side = max(abs(dx), abs(dy))
+        let absDx = abs(dx)
+        let absDy = abs(dy)
+        let r = (ratio.isFinite && ratio > 0) ? ratio : 1.0
+
+        let width: CGFloat
+        let height: CGFloat
+        if absDx / r >= absDy {
+            width = absDx
+            height = absDx / r
+        } else {
+            height = absDy
+            width = absDy * r
+        }
+
         let signX: CGFloat = dx >= 0 ? 1 : -1
         let signY: CGFloat = dy >= 0 ? 1 : -1
-        return NSPoint(x: anchor.x + signX * side, y: anchor.y + signY * side)
+        return NSPoint(x: (anchor.x + signX * width).rounded(),
+                       y: (anchor.y + signY * height).rounded())
+    }
+
+    static func constrainSquareOrCircle(anchor: NSPoint, current: NSPoint) -> NSPoint {
+        constrainAspectRatio(anchor: anchor, current: current, ratio: 1.0)
     }
 
     static func constrainLine(anchor: NSPoint, current: NSPoint) -> NSPoint {

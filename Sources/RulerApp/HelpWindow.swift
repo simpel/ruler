@@ -69,13 +69,16 @@ final class HelpWindowController {
         ]))
 
         out.append(heading("Shapes & Measuring"))
-        out.append(body("Click either ruler or open Distanser Controls to enter active drawing mode. The rulers turn from neutral charcoal to blueprint blue. Drag anywhere on screen to draw shapes or straight lines without interfering with apps underneath. Hold Shift to constrain to a 1:1 ratio (perfect square/circle) or snap lines to 45° angles. Clicking anywhere on the screen exits drawing mode and returns rulers to neutral.\n"))
+        out.append(body("Click either ruler or open Distanser Controls to enter active drawing mode. The rulers turn from neutral charcoal to blueprint blue. Drag anywhere on screen to draw shapes or straight lines without interfering with apps underneath. Drag with Command (⌘) to draw out from the center. Press or hold Shift (⇧) to constrain to a 1:1 ratio (perfect square/circle) or snap lines to 45° angles. Hold both ⇧⌘ to draw out from the center while keeping 1:1. Clicking anywhere on the screen exits drawing mode and returns rulers to neutral.\n"))
         out.append(items([
             ("Activate mode", "click either ruler or Distanser Controls to enter active drawing mode"),
             ("Shape modes", "switch between Rectangle (⌘4), Circle (⌘5), and Line (⌘6) in the Shapes menu or Controls"),
-            ("1:1 / Angle lock", "hold Shift while dragging to constrain 1:1 or snap lines to 45° increments"),
+            ("Draw from center", "drag with Command (⌘) to draw outward from center instead of corner"),
+            ("1:1 / Angle lock", "press or hold Shift (⇧) to constrain 1:1 or snap lines to 45° increments"),
+            ("Center + 1:1", "hold ⇧⌘ to draw out from center with a 1:1 ratio"),
             ("Exit mode", "click anywhere on the screen (or press Esc) to leave active mode; rulers return to neutral"),
             ("Move shapes", "drag the center symbol, readout badge, or outline to move the shape anywhere on screen"),
+            ("Resize shapes", "drag control handles to resize (hold ⌘ to resize from center, ⇧ to constrain 1:1)"),
             ("Set values", "double-click a shape or click the sliders icon on its tooltip to open settings"),
             ("Shapes stay", "letting go of the mouse leaves the shape on screen, so you can place several at once"),
             ("Dismiss one", "click the ✕ on its readout badge"),

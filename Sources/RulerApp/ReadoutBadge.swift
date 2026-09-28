@@ -50,6 +50,7 @@ enum ReadoutBadge {
                      in bounds: NSRect,
                      near point: NSPoint? = nil,
                      forShapeBox box: NSRect? = nil,
+                     screenVisibleRect: NSRect? = nil,
                      isHovered: Bool = false,
                      moveHot: Bool = false,
                      editHot: Bool = false,
@@ -106,23 +107,77 @@ enum ReadoutBadge {
         let totalWidth = contentWidth + padX * 2
         let totalHeight = padY * 2 + headerHeight + dividerGap + gridHeight
 
-        // Compute badge position
+        // Compute badge position with screen edge detection
         let badgeRect: NSRect
+        let screenSafeMargin: CGFloat = 8.0
+
         if let box {
-            var x = box.midX - totalWidth / 2.0
-            var y = box.minY - totalHeight - 12.0
-            if y < bounds.minY + 4 {
-                y = box.maxY + 12.0
+            let margin: CGFloat = 12.0
+            let neededHeight = totalHeight + margin
+
+            // Screen boundaries in view coordinates (fall back to view bounds if nil)
+            let minScreenY = (screenVisibleRect?.minY ?? bounds.minY) + screenSafeMargin
+            let maxScreenY = (screenVisibleRect?.maxY ?? bounds.maxY) - screenSafeMargin
+
+            let spaceBelow = box.minY - minScreenY
+            let spaceAbove = maxScreenY - box.maxY
+
+            var y: CGFloat
+            if spaceBelow >= neededHeight {
+                // Preferred: comfortably below the shape
+                y = box.minY - totalHeight - margin
+            } else if spaceAbove >= neededHeight {
+                // Close to bottom screen edge (or Dock): place above shape
+                y = box.maxY + margin
+            } else if spaceAbove > spaceBelow {
+                // Neither has full clearance, but above has more space
+                y = max(box.maxY + 4.0, min(maxScreenY - totalHeight, box.maxY + margin))
+            } else {
+                // Below has more space
+                y = min(box.minY - totalHeight - 4.0, max(minScreenY, box.minY - totalHeight - margin))
             }
-            x = min(max(x, bounds.minX + 4), bounds.maxX - totalWidth - 4)
-            y = min(max(y, bounds.minY + 4), bounds.maxY - totalHeight - 4)
+
+            // Safety clamp within view bounds so badge is never clipped by window
+            y = max(bounds.minY + 2.0, min(bounds.maxY - totalHeight - 2.0, y))
+
+            // Horizontal positioning with screen edge detection
+            let minScreenX = (screenVisibleRect?.minX ?? bounds.minX) + screenSafeMargin
+            let maxScreenX = (screenVisibleRect?.maxX ?? bounds.maxX) - screenSafeMargin
+
+            var x = box.midX - totalWidth / 2.0
+
+            if x < minScreenX {
+                x = minScreenX
+            } else if x + totalWidth > maxScreenX {
+                x = maxScreenX - totalWidth
+            }
+
+            // Safety clamp within view bounds
+            x = max(bounds.minX + 2.0, min(bounds.maxX - totalWidth - 2.0, x))
+
             badgeRect = NSRect(x: x.rounded(), y: y.rounded(), width: totalWidth.rounded(), height: totalHeight.rounded())
         } else {
             let pt = point ?? .zero
             var x = pt.x + 14
             var y = pt.y + 14
-            x = min(max(x, bounds.minX + 2), bounds.maxX - totalWidth - 2)
-            y = min(max(y, bounds.minY + 2), bounds.maxY - totalHeight - 2)
+
+            let minScreenX = (screenVisibleRect?.minX ?? bounds.minX) + screenSafeMargin
+            let maxScreenX = (screenVisibleRect?.maxX ?? bounds.maxX) - screenSafeMargin
+            let minScreenY = (screenVisibleRect?.minY ?? bounds.minY) + screenSafeMargin
+            let maxScreenY = (screenVisibleRect?.maxY ?? bounds.maxY) - screenSafeMargin
+
+            if x + totalWidth > maxScreenX {
+                x = pt.x - totalWidth - 14
+            }
+            if y + totalHeight > maxScreenY {
+                y = pt.y - totalHeight - 14
+            }
+
+            x = max(minScreenX, min(maxScreenX - totalWidth, x))
+            y = max(minScreenY, min(maxScreenY - totalHeight, y))
+
+            x = max(bounds.minX + 2, min(bounds.maxX - totalWidth - 2, x))
+            y = max(bounds.minY + 2, min(bounds.maxY - totalHeight - 2, y))
             badgeRect = NSRect(x: x.rounded(), y: y.rounded(), width: totalWidth.rounded(), height: totalHeight.rounded())
         }
 

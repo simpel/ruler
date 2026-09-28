@@ -78,27 +78,26 @@ A Mac App Store submission is a separate, sandboxed build — see
 | --- | --- |
 | Drag anywhere on a ruler | Move it |
 | Drag the far end (right end / bottom end) | Change its length — the handle lights up with a resize arrow when the pointer is over it |
+| ⌘-drag along ruler | Slide its zero position along that ruler axis |
 | Double-click a spot | Set the zero mark there |
 | Right-click a ruler | Set zero · add a guide · clear guides · settings · hide this ruler · quit |
 | Move the pointer anywhere on screen | Red line + badge follow it on both rulers, plus full-screen crosshair |
-| **Shift-drag anywhere on screen** | Measure: distance, width and height between the two points |
+| **Drag anywhere on screen (draw mode)** | Draw shape or line |
+| **⌘-drag anywhere on screen** | Draw out from center |
+| **⇧-drag anywhere on screen** | Keep 1:1 square/circle (45° angle for lines) |
+| **⇧⌘-drag anywhere on screen** | Draw out from center with 1:1 ratio |
 | **Click the ✕ on a measurement** | Dismiss it — measurements stay on screen until you do |
 | **⌥-drag off a ruler** | Pull out a fixed guide line |
 
-### Measuring (shift-drag)
+### Shapes & Measuring
 
-Hold Shift and a crosshair readout shows the pointer's X/Y. Keep Shift held and
-drag: a line is drawn between press and release with a badge showing the
-distance in pixels plus the width and height of the drag, and both rulers
-highlight the span you covered. When you release the mouse the measurement stays on screen with a ✕ button on
-its readout, so you can measure several things at once. Dismiss one with its ✕,
-or all of them with **Clear All Measurements** in the menu. They are not kept
-across launches.
+Click either ruler or open Distanser Controls to enter active drawing mode. The rulers turn from neutral charcoal to blueprint blue. Drag anywhere on screen to draw shapes or straight lines without interfering with apps underneath.
 
-Because Distanser never intercepts your clicks (see Notes), the app underneath also
-receives the shift-drag — in a text editor that means it will extend a
-selection. If that gets in the way, switch **Measure Gesture** in the menu to
-⇧⌘-drag or ⌥⌘-drag.
+- **⌘-drag**: Draw outward from the center instead of from a corner.
+- **⇧-drag**: Constrain to a 1:1 ratio (perfect square or circle; 45° angle increments for lines).
+- **⇧⌘-drag**: Draw outward from the center while keeping a 1:1 ratio.
+
+When you release the mouse the shape stays on screen with a readout badge showing dimensions, position, and controls. You can reposition shapes via their center cross or outline, resize them with control dots (holding ⌘ to resize from center, ⇧ to constrain 1:1), or double-click to configure precise values. Dismiss one with its ✕, or all of them with **Clear All Shapes** in the menu or Controls.
 
 ### Guides
 

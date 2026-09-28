@@ -168,32 +168,72 @@ extension MeasureView {
         needsDisplay = true
     }
 
+    override func flagsChanged(with event: NSEvent) {
+        super.flagsChanged(with: event)
+        if isResizingDot {
+            mouseDragged(with: event)
+        }
+    }
+
     override func mouseDragged(with event: NSEvent) {
         if isResizingDot, let owner, let dotKind = activeResizeDot {
             let mouse = NSEvent.mouseLocation
             let dx = mouse.x - dotDragStartMouse.x
             let dy = mouse.y - dotDragStartMouse.y
             let constrain = event.modifierFlags.contains(.shift)
+            let fromCenter = event.modifierFlags.contains(.command)
 
             var newAnchor = dotDragStartAnchor
             var newCurrent = dotDragStartCurrent
 
-            switch dotKind {
-            case .current:
-                var target = NSPoint(x: (dotDragStartCurrent.x + dx).rounded(),
-                                     y: (dotDragStartCurrent.y + dy).rounded())
-                if constrain {
-                    target = RulerController.constrainSquareOrCircle(anchor: dotDragStartAnchor, current: target)
-                }
-                newCurrent = target
+            if fromCenter {
+                let center = NSPoint(x: (dotDragStartAnchor.x + dotDragStartCurrent.x) / 2.0,
+                                     y: (dotDragStartAnchor.y + dotDragStartCurrent.y) / 2.0)
+                switch dotKind {
+                case .current:
+                    let rawTarget = NSPoint(x: dotDragStartCurrent.x + dx, y: dotDragStartCurrent.y + dy)
+                    let target: NSPoint
+                    if owner.shapeType == .line {
+                        target = constrain ? RulerController.constrainLine(anchor: center, current: rawTarget) : rawTarget
+                    } else {
+                        target = constrain ? RulerController.constrainSquareOrCircle(anchor: center, current: rawTarget) : rawTarget
+                    }
+                    newCurrent = target
+                    newAnchor = NSPoint(x: (2 * center.x - target.x).rounded(),
+                                        y: (2 * center.y - target.y).rounded())
 
-            case .anchor:
-                var target = NSPoint(x: (dotDragStartAnchor.x + dx).rounded(),
-                                     y: (dotDragStartAnchor.y + dy).rounded())
-                if constrain {
-                    target = RulerController.constrainSquareOrCircle(anchor: dotDragStartCurrent, current: target)
+                case .anchor:
+                    let rawTarget = NSPoint(x: dotDragStartAnchor.x + dx, y: dotDragStartAnchor.y + dy)
+                    let target: NSPoint
+                    if owner.shapeType == .line {
+                        target = constrain ? RulerController.constrainLine(anchor: center, current: rawTarget) : rawTarget
+                    } else {
+                        target = constrain ? RulerController.constrainSquareOrCircle(anchor: center, current: rawTarget) : rawTarget
+                    }
+                    newAnchor = target
+                    newCurrent = NSPoint(x: (2 * center.x - target.x).rounded(),
+                                         y: (2 * center.y - target.y).rounded())
                 }
-                newAnchor = target
+            } else {
+                switch dotKind {
+                case .current:
+                    let rawTarget = NSPoint(x: (dotDragStartCurrent.x + dx).rounded(),
+                                            y: (dotDragStartCurrent.y + dy).rounded())
+                    if owner.shapeType == .line {
+                        newCurrent = constrain ? RulerController.constrainLine(anchor: dotDragStartAnchor, current: rawTarget) : rawTarget
+                    } else {
+                        newCurrent = constrain ? RulerController.constrainSquareOrCircle(anchor: dotDragStartAnchor, current: rawTarget) : rawTarget
+                    }
+
+                case .anchor:
+                    let rawTarget = NSPoint(x: (dotDragStartAnchor.x + dx).rounded(),
+                                            y: (dotDragStartAnchor.y + dy).rounded())
+                    if owner.shapeType == .line {
+                        newAnchor = constrain ? RulerController.constrainLine(anchor: dotDragStartCurrent, current: rawTarget) : rawTarget
+                    } else {
+                        newAnchor = constrain ? RulerController.constrainSquareOrCircle(anchor: dotDragStartCurrent, current: rawTarget) : rawTarget
+                    }
+                }
             }
 
             let minSize: CGFloat = 5
