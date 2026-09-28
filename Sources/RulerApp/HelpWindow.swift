@@ -60,10 +60,10 @@ final class HelpWindowController {
 
         out.append(heading("The rulers"))
         out.append(items([
-            ("Drag along ruler", "slide its zero position along that ruler axis"),
-            ("⇧-drag a ruler", "reposition the ruler window anywhere on screen"),
+            ("Drag a ruler", "reposition the ruler window anywhere on screen"),
+            ("⌘-drag along ruler", "slide its zero position along that ruler axis"),
             ("Drag the far end", "change its length — the end with the grip dots"),
-            ("⌘-click a ruler", "place a guide directly at that spot"),
+            ("⌘-click a ruler", "toggle a guide marker directly at that spot"),
             ("Right-click a ruler", "set or reset zero, add a cross guide, open settings, hide the ruler, or quit"),
             ("Move the pointer", "a red line and a pixel readout follow it on both rulers"),
         ]))

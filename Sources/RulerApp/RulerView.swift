@@ -36,8 +36,7 @@ final class RulerView: NSView {
         case none
         case resize
         case moveWindow
-        case slideZero(initialOffset: CGFloat, startMousePos: NSPoint)
-        case guideOut(guide: GuideWindow, initialOffset: CGFloat)
+        case slideZero(initialOffset: CGFloat, startMousePos: NSPoint, isDragging: Bool)
     }
 
     private var rulerDragMode: RulerDragMode = .none
@@ -154,37 +153,14 @@ final class RulerView: NSView {
         RulerController.shared.activateContext()
         let p = convert(event.locationInWindow, from: nil)
 
-        // 1. Command-click on ruler toggles a guide directly at this coordinate
+        // 1. Command gestures: Command-drag moves zero point, Command-click creates/toggles a marker
         if event.modifierFlags.contains(.command) {
-            let nearbyGuides = GuideManager.shared.guidesNear(point: NSEvent.mouseLocation, threshold: max(16, RulerView.thickness / 2))
-            let guidesOnThisRuler = GuideManager.shared.guides.filter { guide in
-                guard guide.orientation == axis else { return false }
-                guard guide.windowNumber != window.windowNumber else { return false }
-                return guide.frame.intersects(window.frame.insetBy(dx: -4, dy: -4))
-            }
-
-            let guidesToRemove = Set(nearbyGuides).union(guidesOnThisRuler)
-            if !guidesToRemove.isEmpty {
-                for g in guidesToRemove {
-                    GuideManager.shared.remove(g)
-                }
-            } else {
-                GuideManager.shared.add(orientation: axis, at: NSEvent.mouseLocation)
-            }
-            GuideManager.shared.save()
-            rulerDragMode = .none
-            needsDisplay = true
+            let initialOffset = Settings.shared.zeroOffset(for: axis)
+            rulerDragMode = .slideZero(initialOffset: initialOffset, startMousePos: NSEvent.mouseLocation, isDragging: false)
             return
         }
 
-        // 2. Shift-drag repositions the ruler window
-        if event.modifierFlags.contains(.shift) {
-            rulerDragMode = .moveWindow
-            window.performDrag(with: event)
-            return
-        }
-
-        // 3. Click in resize zone resizes the ruler length
+        // 2. Click in resize zone resizes the ruler length
         if isInResizeZone(p) {
             rulerDragMode = .resize
             dragStartMouse = NSEvent.mouseLocation
@@ -192,9 +168,9 @@ final class RulerView: NSView {
             return
         }
 
-        // 4. Normal drag start: records position to slide zero or drag out a guide
-        let initialOffset = Settings.shared.zeroOffset(for: axis)
-        rulerDragMode = .slideZero(initialOffset: initialOffset, startMousePos: NSEvent.mouseLocation)
+        // 3. Normal drag on a ruler moves it
+        rulerDragMode = .moveWindow
+        window.performDrag(with: event)
     }
 
     override func mouseDragged(with event: NSEvent) {
@@ -203,9 +179,6 @@ final class RulerView: NSView {
         switch rulerDragMode {
         case .none, .moveWindow:
             break
-
-        case .guideOut(let guide, _):
-            guide.move(to: now)
 
         case .resize:
             guard let window else { return }
@@ -221,45 +194,52 @@ final class RulerView: NSView {
                                        width: dragStartFrame.width, height: h), display: true)
             }
 
-        case .slideZero(let initialOffset, let startMousePos):
-            let localPoint = convert(event.locationInWindow, from: nil)
-            let outThreshold: CGFloat = 4.0
-            let isDraggedOut: Bool
+        case .slideZero(let initialOffset, let startMousePos, var isDragging):
+            let dist = hypot(now.x - startMousePos.x, now.y - startMousePos.y)
+            if dist >= 3 {
+                isDragging = true
+                rulerDragMode = .slideZero(initialOffset: initialOffset, startMousePos: startMousePos, isDragging: true)
+            }
+            guard isDragging else { break }
+
             switch axis {
             case .horizontal:
-                isDraggedOut = localPoint.y < -outThreshold || localPoint.y > bounds.height + outThreshold
+                let delta = now.x - startMousePos.x
+                Settings.shared.setZeroOffset(initialOffset + delta, for: axis)
             case .vertical:
-                isDraggedOut = localPoint.x < -outThreshold || localPoint.x > bounds.width + outThreshold
+                let delta = startMousePos.y - now.y
+                Settings.shared.setZeroOffset(initialOffset + delta, for: axis)
             }
-
-            if isDraggedOut {
-                // Dragged out perpendicular to the ruler: create and pull out a guide!
-                Settings.shared.setZeroOffset(initialOffset, for: axis)
-                needsDisplay = true
-
-                let guide = GuideManager.shared.add(orientation: axis, at: now)
-                rulerDragMode = .guideOut(guide: guide, initialOffset: initialOffset)
-            } else {
-                // Dragging along the ruler axis: move the zero position for this ruler
-                switch axis {
-                case .horizontal:
-                    let delta = now.x - startMousePos.x
-                    Settings.shared.setZeroOffset(initialOffset + delta, for: axis)
-                case .vertical:
-                    let delta = startMousePos.y - now.y
-                    Settings.shared.setZeroOffset(initialOffset + delta, for: axis)
-                }
-                needsDisplay = true
-            }
+            needsDisplay = true
         }
     }
 
     override func mouseUp(with event: NSEvent) {
         setHover(convert(event.locationInWindow, from: nil))
-        if case .guideOut = rulerDragMode {
-            GuideManager.shared.save()
+
+        if case .slideZero(_, let startMousePos, let isDragging) = rulerDragMode {
+            if !isDragging {
+                toggleGuide(at: startMousePos)
+            }
         }
+
         rulerDragMode = .none
         needsDisplay = true
+    }
+
+    private func toggleGuide(at point: NSPoint) {
+        let markerOrientation: RulerAxis = (axis == .horizontal ? .vertical : .horizontal)
+        let hitGuides = GuideManager.shared.guidesNear(point: point, threshold: 16).filter {
+            $0.orientation == markerOrientation
+        }
+
+        if !hitGuides.isEmpty {
+            for g in hitGuides {
+                GuideManager.shared.remove(g)
+            }
+        } else {
+            GuideManager.shared.add(orientation: markerOrientation, at: point)
+        }
+        GuideManager.shared.save()
     }
 }

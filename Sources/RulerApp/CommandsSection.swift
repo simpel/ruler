@@ -93,7 +93,6 @@ final class CommandsSection: NSView {
         stack.setCustomSpacing(3, after: guidesGroup)
 
         let guidesCommands: [(String, String)] = [
-            ("Drag Out", "Drag out from ruler to place guide"),
             ("⌘ Click", "Toggle guide on ruler / cross marker"),
         ]
         for (gesture, desc) in guidesCommands {
@@ -110,8 +109,8 @@ final class CommandsSection: NSView {
         stack.setCustomSpacing(3, after: rulersGroup)
 
         let rulersCommands: [(String, String)] = [
-            ("Drag", "Slide zero mark (drag end to resize)"),
-            ("⇧ Drag", "Reposition ruler window"),
+            ("Drag", "Move ruler (drag end to resize)"),
+            ("⌘ Drag", "Move zero point"),
             ("Right Click", "Set / reset zero & ruler menu"),
         ]
         for (gesture, desc) in rulersCommands {
