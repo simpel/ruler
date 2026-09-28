@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 ./build.sh
-VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Resources/Info.plist)
+VERSION=${APP_VERSION:-$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Resources/Info.plist)}
 DIST="build/dist"
 rm -rf "$DIST"
 mkdir -p "$DIST"

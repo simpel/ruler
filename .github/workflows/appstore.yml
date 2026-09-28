@@ -10,13 +10,18 @@ on:
       - '.gitignore'
       - 'docs/**'
   workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump type (auto, patch, minor, major, or explicit version e.g. 1.7.0)'
+        required: false
+        default: 'auto'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-and-deploy:
@@ -27,6 +32,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Select Latest Xcode Version
         run: |
@@ -97,16 +104,54 @@ jobs:
           cp ~/.appstoreconnect/private_keys/AuthKey_${API_KEY_ID}.p8 ~/.private_keys/AuthKey_${API_KEY_ID}.p8
           chmod 600 ~/.appstoreconnect/private_keys/AuthKey_${API_KEY_ID}.p8 ~/.private_keys/AuthKey_${API_KEY_ID}.p8
 
-      - name: Build & Package for Mac App Store
+      - name: Bump App Version
+        id: version
         env:
-          KEYCHAIN_PATH: ${{ env.KEYCHAIN_PATH }}
+          BUMP_INPUT: ${{ inputs.bump || 'auto' }}
         run: |
           # Guarantee build number is monotonically increasing beyond historical submissions (>7)
           BUILD_NUMBER=$(( 100 + ${{ github.run_number }} ))
           echo "Setting dynamic build number: $BUILD_NUMBER"
           echo "BUILD_NUMBER=$BUILD_NUMBER" >> "$GITHUB_ENV"
 
-          BUILD_NUMBER="$BUILD_NUMBER" KEYCHAIN_PATH="$KEYCHAIN_PATH" ./package-appstore.sh
+          # Automatically calculate next version and update Resources/Info.plist
+          chmod +x Tools/bump-version.sh
+          ./Tools/bump-version.sh --bump "$BUMP_INPUT" --build "$BUILD_NUMBER" --write
+
+          VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Resources/Info.plist)
+          echo "Determined app version: $VERSION"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "APP_VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          # If running on main, commit the version bump and push tag back to repo
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+
+            if ! git diff --quiet Resources/Info.plist; then
+              echo "Committing version bump to $VERSION (build $BUILD_NUMBER)..."
+              git add Resources/Info.plist
+              git commit -m "chore(release): bump version to $VERSION [skip ci]"
+              if ! git rev-parse "v$VERSION" >/dev/null 2>&1; then
+                git tag -a "v$VERSION" -m "Release v$VERSION"
+              fi
+              git pull --rebase origin main || true
+              git push origin main --tags || echo "Warning: git push failed, continuing with build..."
+            elif ! git rev-parse "v$VERSION" >/dev/null 2>&1; then
+              echo "Tagging existing version v$VERSION..."
+              git tag -a "v$VERSION" -m "Release v$VERSION"
+              git push origin "v$VERSION" || echo "Warning: git push tag failed, continuing with build..."
+            fi
+          fi
+
+      - name: Build & Package for Mac App Store
+        env:
+          KEYCHAIN_PATH: ${{ env.KEYCHAIN_PATH }}
+          BUILD_NUMBER: ${{ env.BUILD_NUMBER }}
+          APP_VERSION: ${{ env.VERSION }}
+        run: |
+          BUILD_NUMBER="$BUILD_NUMBER" APP_VERSION="$APP_VERSION" KEYCHAIN_PATH="$KEYCHAIN_PATH" ./package-appstore.sh
 
           PKG_PATH=$(ls build/dist/Distanser-*-appstore.pkg | head -n 1)
           echo "Discovered package: $PKG_PATH"
@@ -115,7 +160,7 @@ jobs:
       - name: Upload PKG Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Distanser-${{ env.BUILD_NUMBER }}-appstore-pkg
+          name: Distanser-${{ env.VERSION }}-${{ env.BUILD_NUMBER }}-appstore-pkg
           path: ${{ env.PKG_PATH }}
           if-no-files-found: error
           retention-days: 14

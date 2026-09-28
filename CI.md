@@ -8,7 +8,7 @@ Distanser uses **GitHub Actions** (`.github/workflows/appstore.yml`) to automati
 
 1. **Trigger**: Pushing to `main` or manually running the workflow from the GitHub Actions tab.
 2. **Environment**: Apple Silicon `macos-15` runner with the latest Xcode.
-3. **Versioning**: Sets `CFBundleVersion` dynamically to `$(( 100 + github.run_number ))` so every build uploaded to App Store Connect has a guaranteed unique, monotonically increasing build number exceeding previous submissions (build 7).
+3. **Versioning**: Automatically calculates and bumps `CFBundleShortVersionString` using Conventional Commits since the last release tag (breaking changes -> major, `feat` -> minor, fixes/others -> patch), writes the updated version to `Resources/Info.plist`, and tags/commits back to `main`. Sets `CFBundleVersion` dynamically to `$(( 100 + github.run_number ))` so every build uploaded to App Store Connect has a guaranteed unique, monotonically increasing build number exceeding previous submissions.
 4. **Signing**: Imports your **Apple Distribution** certificate and **Mac Installer Distribution** ("3rd Party Mac Developer Installer") certificate into an isolated temporary runner keychain.
 5. **Provisioning**: Uses the Mac App Store provisioning profile (`Resources/Distanser_MAS.provisionprofile` or the `BUILD_PROVISION_PROFILE_BASE64` secret).
 6. **Packaging**: Runs `package-appstore.sh` to compile a universal binary (`arm64` + `x86_64`), codesign the sandboxed `Distanser.app`, and package it into a signed `.pkg` installer via `productbuild`.

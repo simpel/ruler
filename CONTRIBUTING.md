@@ -68,18 +68,27 @@ Any commit that introduces breaking changes must indicate it by appending an exc
 
 Distanser uses Semantic Release principles to publish releases:
 
-1. **Determine the next version**:
-   - Inspect the commit log since the last tag.
-   - If there is a `BREAKING CHANGE` or `!`: bump **MAJOR** (`v2.0.0`).
-   - If there is at least one `feat`: bump **MINOR** (`v1.6.0`).
-   - If there is only `fix` / `perf`: bump **PATCH** (`v1.5.1`).
+### Automated CI/CD (App Store Connect & Releases)
 
-2. **Update version numbers**:
-   Update `CFBundleShortVersionString` (and increment `CFBundleVersion` build integer) in `Resources/Info.plist`:
-   ```bash
-   /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.6.0" Resources/Info.plist
-   /usr/libexec/PlistBuddy -c "Set :CFBundleVersion 10" Resources/Info.plist
-   ```
+When committing or merging to `main`, the CD pipeline (`.github/workflows/appstore.yml`) automatically:
+1. Analyzes commit messages since the last release tag.
+2. Computes the next version following Conventional Commits (major for breaking changes, minor for `feat`, patch for fixes/others).
+3. Updates `Resources/Info.plist` with the new `CFBundleShortVersionString` and dynamic `CFBundleVersion`.
+4. Tags and commits the release back to `main` with `[skip ci]`.
+5. Packages and submits the build to App Store Connect.
+
+### Manual Version Bumping
+
+You can also bump the version locally using the helper script:
+```bash
+# Auto-detect based on conventional commits
+./Tools/bump-version.sh --write
+
+# Or specify bump level
+./Tools/bump-version.sh --bump patch --write
+./Tools/bump-version.sh --bump minor --write
+./Tools/bump-version.sh --bump 1.7.0 --write
+```
 
 3. **Commit the version bump**:
    ```bash

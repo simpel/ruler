@@ -10,7 +10,7 @@ FAST=false
 [ "${1:-}" = "--fast" ] && FAST=true
 
 APP="build/Distanser.app"
-VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Resources/Info.plist)
+VERSION=${APP_VERSION:-$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Resources/Info.plist)}
 
 # Regenerate the icon whenever its source is newer than the .icns.
 if [ ! -f Resources/AppIcon.icns ] || [ Tools/make-icon.swift -nt Resources/AppIcon.icns ]; then
@@ -35,6 +35,7 @@ fi
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 lipo -create -output "$APP/Contents/MacOS/Distanser" "${BINARIES[@]}"
 printf 'APPL????' > "$APP/Contents/PkgInfo"

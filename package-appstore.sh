@@ -62,7 +62,7 @@ if [ -z "${APPSTORE_PROFILE:-}" ]; then
 fi
 [ -f "$APPSTORE_PROFILE" ] || { echo "error: provisioning profile not found at $APPSTORE_PROFILE" >&2; exit 1; }
 
-VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Resources/Info.plist)
+VERSION=${APP_VERSION:-$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Resources/Info.plist)}
 BUILD=${BUILD_NUMBER:-$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" Resources/Info.plist)}
 APP="build/appstore/Distanser.app"
 DIST="build/dist"
@@ -84,6 +84,7 @@ swift build -c release \
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 cp Resources/PrivacyInfo.xcprivacy "$APP/Contents/Resources/PrivacyInfo.xcprivacy"
