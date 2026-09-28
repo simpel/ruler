@@ -8,8 +8,10 @@ final class MeasureView: NSView {
     var anchor: NSPoint?
     var current: NSPoint = .zero
     var scale: CGFloat = 1
-    /// Top-left corner of the pointer's screen, in this view's coordinates.
+    /// Zero origin of the rulers, in this view's coordinates.
     var screenOrigin: NSPoint = .zero
+    /// Top-left corner of the display screen, in this view's coordinates.
+    var displayScreenOrigin: NSPoint = .zero
 
     /// Kept measurements carry action buttons (move, edit, close); live drawing does not.
     var showsClose = false
@@ -86,14 +88,20 @@ final class MeasureView: NSView {
     }
 
     func isOverOutline(_ localPoint: NSPoint) -> Bool {
-        shapeType.isPointOnOutline(localPoint, in: shapeBox)
+        if shapeType == .line, let a = anchor {
+            return ShapeType.distanceToSegment(p: localPoint, a: a, b: current) <= 8.0
+        }
+        return shapeType.isPointOnOutline(localPoint, in: shapeBox)
     }
 
     override func draw(_ dirtyRect: NSRect) {
         if let a = anchor {
-            if shapeType == .circle {
+            switch shapeType {
+            case .circle:
                 drawCircleMeasurement(from: a, to: current)
-            } else {
+            case .line:
+                drawLineMeasurement(from: a, to: current)
+            case .rectangle:
                 drawRectangleMeasurement(from: a, to: current)
             }
         } else {
@@ -113,6 +121,75 @@ final class MeasureView: NSView {
             moveRect = nil
             metricHits = []
         }
+    }
+
+    private func drawLineMeasurement(from a: NSPoint, to b: NSPoint) {
+        let box = NSRect(x: min(a.x, b.x), y: min(a.y, b.y),
+                         width: abs(a.x - b.x), height: abs(a.y - b.y))
+        shapeBox = box
+
+        if outlineHot {
+            let boxPath = NSBezierPath(rect: box)
+            boxPath.lineWidth = 1
+            boxPath.setLineDash([3, 3], count: 2, phase: 0)
+            Palette.live.withAlphaComponent(0.3).setStroke()
+            boxPath.stroke()
+        }
+
+        let line = NSBezierPath()
+        line.lineWidth = outlineHot ? 2.5 : 2.0
+        line.lineCapStyle = .round
+        line.move(to: a)
+        line.line(to: b)
+        Palette.live.setStroke()
+        line.stroke()
+
+        let center = NSPoint(x: (a.x + b.x) / 2.0, y: (a.y + b.y) / 2.0)
+        ShapeCenterHandle.draw(at: center)
+
+        if showsClose {
+            let chBox = NSRect(x: center.x - 9, y: center.y - 9, width: 18, height: 18)
+            centerMoveRect = ShapeCenterHandle.hitRect(for: chBox)
+        } else {
+            centerMoveRect = nil
+        }
+
+        let dots = ShapeResizeHandle.dots(shapeType: .line, anchor: a, current: b, box: box)
+        activeDots = dots
+        for dot in dots {
+            let isHovered = showsClose && (hoveredDot == dot.kind)
+            ShapeResizeHandle.drawDot(at: dot.point, isHovered: isHovered)
+        }
+
+        let posX = (box.minX - screenOrigin.x) * scale
+        let posY = (screenOrigin.y - box.maxY) * scale
+        let scrX = showsClose ? (box.minX - displayScreenOrigin.x) * scale : nil
+        let scrY = showsClose ? (displayScreenOrigin.y - box.maxY) * scale : nil
+        let width = box.width * scale
+        let height = box.height * scale
+        let length = hypot(b.x - a.x, b.y - a.y) * scale
+
+        let layout = ReadoutBadge.draw(shapeType: .line,
+                                       showsActions: showsClose,
+                                       posX: posX,
+                                       posY: posY,
+                                       screenX: scrX,
+                                       screenY: scrY,
+                                       width: width,
+                                       height: height,
+                                       length: length,
+                                       in: bounds,
+                                       forShapeBox: box,
+                                       isHovered: tooltipHot,
+                                       moveHot: moveHot,
+                                       editHot: editHot,
+                                       closeHot: closeHot,
+                                       activeMetric: activeMetric)
+        badgeRect = layout.badgeRect
+        closeRect = layout.closeRect
+        editRect = layout.editRect
+        moveRect = layout.moveRect
+        metricHits = layout.metricHits
     }
 
     private func drawRectangleMeasurement(from a: NSPoint, to b: NSPoint) {
@@ -157,6 +234,8 @@ final class MeasureView: NSView {
 
         let posX = (box.minX - screenOrigin.x) * scale
         let posY = (screenOrigin.y - box.maxY) * scale
+        let scrX = showsClose ? (box.minX - displayScreenOrigin.x) * scale : nil
+        let scrY = showsClose ? (displayScreenOrigin.y - box.maxY) * scale : nil
         let width = box.width * scale
         let height = box.height * scale
 
@@ -164,6 +243,8 @@ final class MeasureView: NSView {
                                        showsActions: showsClose,
                                        posX: posX,
                                        posY: posY,
+                                       screenX: scrX,
+                                       screenY: scrY,
                                        width: width,
                                        height: height,
                                        in: bounds,
@@ -214,6 +295,8 @@ final class MeasureView: NSView {
 
         let posX = (box.minX - screenOrigin.x) * scale
         let posY = (screenOrigin.y - box.maxY) * scale
+        let scrX = showsClose ? (box.minX - displayScreenOrigin.x) * scale : nil
+        let scrY = showsClose ? (displayScreenOrigin.y - box.maxY) * scale : nil
         let width = box.width * scale
         let height = box.height * scale
         let radius = (width + height) / 4.0
@@ -223,6 +306,8 @@ final class MeasureView: NSView {
                                        showsActions: showsClose,
                                        posX: posX,
                                        posY: posY,
+                                       screenX: scrX,
+                                       screenY: scrY,
                                        width: width,
                                        height: height,
                                        radius: radius,

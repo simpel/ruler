@@ -92,10 +92,16 @@ enum MetricScrubber {
                 newAnchor.y = (midY + halfH).rounded()
                 newCurrent.y = (midY - halfH).rounded()
             }
-        case .x:
+        case .length:
+            let origLen = max(1, hypot(current.x - anchor.x, current.y - anchor.y))
+            let newLen = max(5, origLen + delta)
+            let s = newLen / origLen
+            newCurrent = NSPoint(x: (anchor.x + (current.x - anchor.x) * s).rounded(),
+                                 y: (anchor.y + (current.y - anchor.y) * s).rounded())
+        case .x, .screenX:
             newAnchor.x = anchor.x + delta
             newCurrent.x = current.x + delta
-        case .y:
+        case .y, .screenY:
             // Dragging right increases displayed posY (distance from top), moving shape down
             newAnchor.y = anchor.y - delta
             newCurrent.y = current.y - delta

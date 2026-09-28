@@ -71,9 +71,12 @@ final class MeasurementWindow: NSPanel {
         measureView.scale = unitsPerPoint()
 
         let screen = NSScreen.screens.first { $0.frame.contains(current) } ?? NSScreen.main ?? NSScreen.screens.first
+        let zero = RulerController.shared.globalZeroOrigin(on: screen)
+        measureView.screenOrigin = NSPoint(x: zero.x - frame.minX,
+                                           y: zero.y - frame.minY)
         if let screen {
-            measureView.screenOrigin = NSPoint(x: screen.frame.minX - frame.minX,
-                                               y: screen.frame.maxY - frame.minY)
+            measureView.displayScreenOrigin = NSPoint(x: screen.frame.minX - frame.minX,
+                                                      y: screen.frame.maxY - frame.minY)
         }
         measureView.needsDisplay = true
         ShapeEditDialogController.shared.syncIfActive(for: self)
@@ -85,10 +88,19 @@ final class MeasurementWindow: NSPanel {
         return screen?.backingScaleFactor ?? 2
     }
 
-    /// Refreshes the readout when the unit setting changes.
+    /// Refreshes the readout when the unit setting or ruler zero changes.
     func refresh() {
         measureView.scale = unitsPerPoint()
+        let screen = NSScreen.screens.first { $0.frame.contains(current) } ?? NSScreen.main ?? NSScreen.screens.first
+        let zero = RulerController.shared.globalZeroOrigin(on: screen)
+        measureView.screenOrigin = NSPoint(x: zero.x - frame.minX,
+                                           y: zero.y - frame.minY)
+        if let screen {
+            measureView.displayScreenOrigin = NSPoint(x: screen.frame.minX - frame.minX,
+                                                      y: screen.frame.maxY - frame.minY)
+        }
         measureView.needsDisplay = true
+        ShapeEditDialogController.shared.syncIfActive(for: self)
     }
 
     /// The window covers a large area, so it stays click-through to apps underneath

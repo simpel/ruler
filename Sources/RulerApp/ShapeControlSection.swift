@@ -1,80 +1,90 @@
 import AppKit
 
-/// Control panel section for choosing live shape drawing modes with command hints.
+private final class ShapeSegmentedControl: NSSegmentedControl {
+    var onSegmentTapped: ((Int) -> Void)?
+
+    override func mouseDown(with event: NSEvent) {
+        super.mouseDown(with: event)
+        onSegmentTapped?(selectedSegment)
+    }
+}
+
+/// Control panel toggle for choosing live shape drawing modes (Rectangle vs Circle).
 final class ShapeControlSection: NSView {
 
     private let universalFontSize: CGFloat = 12
-    private let textSection = Palette.guideLine
-    private let textPrimary = NSColor(calibratedWhite: 0.98, alpha: 1.0)
 
-    // Draw mode selector (toggles between Rectangle and Circle)
-    private let switchShape = NSSwitch()
+    // Draw mode selector (toggles between Rectangle, Circle, and Line)
+    private let segmentedControl = ShapeSegmentedControl(labels: ["Rectangle", "Circle", "Line"],
+                                                         trackingMode: .selectOne,
+                                                         target: nil,
+                                                         action: nil)
 
     private var isSyncing = false
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
+        appearance = NSAppearance(named: .darkAqua)
         setupUI()
         bindActions()
     }
 
     required init?(coder: NSCoder) { fatalError("not supported") }
 
-    private func makeSectionLabel(_ text: String) -> NSTextField {
-        let label = NSTextField(labelWithString: text)
-        label.font = NSFont.systemFont(ofSize: universalFontSize, weight: .medium)
-        label.textColor = textSection
-        return label
-    }
-
     private func setupUI() {
-        switchShape.controlSize = .small
-        switchShape.toolTip = "Toggle between Rectangle (off) and Circle (on) shape drawing"
-
-        let stack = NSStackView()
-        stack.orientation = .vertical
-        stack.alignment = .leading
-        stack.spacing = 6
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(stack)
+        segmentedControl.appearance = NSAppearance(named: .darkAqua)
+        segmentedControl.segmentDistribution = .fillEqually
+        segmentedControl.controlSize = .regular
+        segmentedControl.font = NSFont.systemFont(ofSize: universalFontSize, weight: .medium)
+        segmentedControl.setToolTip("Rectangle measurement mode (click to draw)", forSegment: 0)
+        segmentedControl.setToolTip("Circle measurement mode (click to draw)", forSegment: 1)
+        segmentedControl.setToolTip("Line measurement mode (click to draw)", forSegment: 2)
+        segmentedControl.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(segmentedControl)
 
         NSLayoutConstraint.activate([
-            stack.topAnchor.constraint(equalTo: topAnchor),
-            stack.leadingAnchor.constraint(equalTo: leadingAnchor),
-            stack.trailingAnchor.constraint(equalTo: trailingAnchor),
-            stack.bottomAnchor.constraint(equalTo: bottomAnchor),
+            segmentedControl.topAnchor.constraint(equalTo: topAnchor),
+            segmentedControl.leadingAnchor.constraint(equalTo: leadingAnchor),
+            segmentedControl.trailingAnchor.constraint(equalTo: trailingAnchor),
+            segmentedControl.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
-
-        stack.addArrangedSubview(makeSectionLabel("SHAPES"))
-
-        let label = NSTextField(labelWithString: "Circle")
-        label.font = NSFont.systemFont(ofSize: universalFontSize, weight: .regular)
-        label.textColor = textPrimary
-
-        let row = NSStackView(views: [label, switchShape])
-        row.orientation = .horizontal
-        row.distribution = .equalSpacing
-        row.alignment = .centerY
-        row.translatesAutoresizingMaskIntoConstraints = false
-        row.widthAnchor.constraint(equalToConstant: 284).isActive = true
-
-        stack.addArrangedSubview(row)
     }
 
     private func bindActions() {
-        switchShape.target = self
-        switchShape.action = #selector(onToggleShape)
+        segmentedControl.onSegmentTapped = { [weak self] segment in
+            self?.selectShape(segment: segment)
+        }
+        segmentedControl.target = self
+        segmentedControl.action = #selector(onToggleShape)
+    }
+
+    private func selectShape(segment: Int) {
+        switch segment {
+        case 1:
+            Settings.shared.drawShapeType = .circle
+        case 2:
+            Settings.shared.drawShapeType = .line
+        default:
+            Settings.shared.drawShapeType = .rectangle
+        }
+        RulerController.shared.activateContext()
     }
 
     func syncWithSettings() {
         guard !isSyncing else { return }
         isSyncing = true
         defer { isSyncing = false }
-        switchShape.state = Settings.shared.drawShapeType == .circle ? .on : .off
+        switch Settings.shared.drawShapeType {
+        case .rectangle:
+            segmentedControl.selectedSegment = 0
+        case .circle:
+            segmentedControl.selectedSegment = 1
+        case .line:
+            segmentedControl.selectedSegment = 2
+        }
     }
 
     @objc private func onToggleShape() {
-        Settings.shared.drawShapeType = switchShape.state == .on ? .circle : .rectangle
-        RulerController.shared.activateContext()
+        selectShape(segment: segmentedControl.selectedSegment)
     }
 }

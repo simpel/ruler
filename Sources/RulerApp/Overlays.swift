@@ -21,19 +21,6 @@ enum Palette {
         let bottom = face.blended(withFraction: 0.16, of: black) ?? face
         return NSGradient(starting: top, ending: bottom) ?? NSGradient(colors: [face, face])!
     }()
-
-    // Inactive / neutral palette (used when not in active drawing context)
-    static let inactiveFace = NSColor(calibratedRed: 0x24 / 255.0, green: 0x28 / 255.0, blue: 0x30 / 255.0, alpha: 1.0)
-    static let inactiveInk = NSColor(calibratedWhite: 0.65, alpha: 1.0)
-    static let inactiveLive = NSColor(calibratedWhite: 0.48, alpha: 0.8)
-
-    static let inactiveFaceGradient: NSGradient = {
-        let white = NSColor(calibratedWhite: 1.0, alpha: 1.0)
-        let black = NSColor(calibratedWhite: 0.0, alpha: 1.0)
-        let top = inactiveFace.blended(withFraction: 0.12, of: white) ?? inactiveFace
-        let bottom = inactiveFace.blended(withFraction: 0.15, of: black) ?? inactiveFace
-        return NSGradient(starting: top, ending: bottom) ?? NSGradient(colors: [inactiveFace, inactiveFace])!
-    }()
 }
 
 /// A click-through hairline window spanning a whole screen. Used for the
@@ -68,10 +55,7 @@ final class HairlineWindow: NSPanel {
     override var canBecomeKey: Bool { false }
 
     func setLineOpacity(_ opacity: CGFloat) {
-        lineView.alphaValue = opacity
-        lineView.layer?.opacity = Float(opacity)
         alphaValue = opacity
-        backgroundColor = Palette.live.withAlphaComponent(opacity)
     }
 
     /// Positions the hairline through `point` (global coordinates).
@@ -133,8 +117,9 @@ final class MeasureOverlayWindow: NSPanel {
         measureView.current = NSPoint(x: current.x - frame.minX, y: current.y - frame.minY)
         measureView.scale = scale
         measureView.showsClose = false
-        measureView.screenOrigin = NSPoint(x: screen.frame.minX - frame.minX,
-                                           y: screen.frame.maxY - frame.minY)
+        let zero = RulerController.shared.globalZeroOrigin(on: screen)
+        measureView.screenOrigin = NSPoint(x: zero.x - frame.minX,
+                                           y: zero.y - frame.minY)
         measureView.needsDisplay = true
 
         if !isVisible { orderFrontRegardless() }

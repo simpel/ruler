@@ -4,11 +4,13 @@ import AppKit
 enum ShapeType: String, CaseIterable, Codable {
     case rectangle
     case circle
+    case line
 
     var title: String {
         switch self {
         case .rectangle: return "Rectangle"
         case .circle: return "Circle"
+        case .line: return "Line"
         }
     }
 
@@ -34,7 +36,25 @@ enum ShapeType: String, CaseIterable, Codable {
             let avgR = (rx + ry) / 2.0
             let pixelDist = abs(normalizedDist - 1.0) * avgR
             return pixelDist <= tolerance
+
+        case .line:
+            let p1 = NSPoint(x: box.minX, y: box.minY)
+            let p2 = NSPoint(x: box.maxX, y: box.maxY)
+            return ShapeType.distanceToSegment(p: point, a: p1, b: p2) <= tolerance
         }
+    }
+
+    /// Calculates shortest perpendicular distance from point p to line segment (a, b).
+    static func distanceToSegment(p: NSPoint, a: NSPoint, b: NSPoint) -> CGFloat {
+        let dx = b.x - a.x
+        let dy = b.y - a.y
+        let lenSq = dx * dx + dy * dy
+        if lenSq == 0 { return hypot(p.x - a.x, p.y - a.y) }
+        var t = ((p.x - a.x) * dx + (p.y - a.y) * dy) / lenSq
+        t = max(0, min(1, t))
+        let projX = a.x + t * dx
+        let projY = a.y + t * dy
+        return hypot(p.x - projX, p.y - projY)
     }
 
     /// Computes the exact perimeter/circumference of an ellipse (or circle) using Ramanujan's formula.

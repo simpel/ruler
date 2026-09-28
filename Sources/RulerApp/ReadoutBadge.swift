@@ -6,8 +6,11 @@ enum BadgeMetric: Equatable {
     case height
     case radius
     case circumference
+    case length
     case x
     case y
+    case screenX
+    case screenY
 }
 
 /// Interactive hit target for a specific numeric readout on the badge.
@@ -37,10 +40,13 @@ enum ReadoutBadge {
                      showsActions: Bool,
                      posX: CGFloat,
                      posY: CGFloat,
+                     screenX: CGFloat? = nil,
+                     screenY: CGFloat? = nil,
                      width: CGFloat? = nil,
                      height: CGFloat? = nil,
                      radius: CGFloat? = nil,
                      circumference: CGFloat? = nil,
+                     length: CGFloat? = nil,
                      in bounds: NSRect,
                      near point: NSPoint? = nil,
                      forShapeBox box: NSRect? = nil,
@@ -56,26 +62,32 @@ enum ReadoutBadge {
         let rowGap: CGFloat = 7
         let headerHeight: CGFloat = showsActions ? 22 : 0
         let dividerGap: CGFloat = showsActions ? 9 : 0
-        let iconSlotWidth: CGFloat = 14
+        let iconSlotWidth: CGFloat = 22
         let itemGap: CGFloat = 6
         let rowHeight: CGFloat = 15
 
         let xValStr = "\(Int(posX.rounded()))"
         let yValStr = "\(Int(posY.rounded()))"
+        let sxValStr = screenX.map { "\(Int($0.rounded()))" }
+        let syValStr = screenY.map { "\(Int($0.rounded()))" }
         let wValStr = width.map { "\(Int($0.rounded()))" }
         let hValStr = height.map { "\(Int($0.rounded()))" }
         let rValStr = radius.map { "\(Int($0.rounded()))" }
         let cValStr = circumference.map { "\(Int($0.rounded()))" }
+        let lValStr = length.map { "\(Int($0.rounded()))" }
 
         let xValWidth = NSAttributedString(string: xValStr, attributes: [.font: fontVal]).size().width
         let yValWidth = NSAttributedString(string: yValStr, attributes: [.font: fontVal]).size().width
+        let sxValWidth = sxValStr.map { NSAttributedString(string: $0, attributes: [.font: fontVal]).size().width } ?? 0
+        let syValWidth = syValStr.map { NSAttributedString(string: $0, attributes: [.font: fontVal]).size().width } ?? 0
         let wValWidth = wValStr.map { NSAttributedString(string: $0, attributes: [.font: fontVal]).size().width } ?? 0
         let hValWidth = hValStr.map { NSAttributedString(string: $0, attributes: [.font: fontVal]).size().width } ?? 0
         let rValWidth = rValStr.map { NSAttributedString(string: $0, attributes: [.font: fontVal]).size().width } ?? 0
         let cValWidth = cValStr.map { NSAttributedString(string: $0, attributes: [.font: fontVal]).size().width } ?? 0
+        let lValWidth = lValStr.map { NSAttributedString(string: $0, attributes: [.font: fontVal]).size().width } ?? 0
 
-        let col1MaxVal = max(xValWidth, max(wValWidth, rValWidth))
-        let col2MaxVal = max(yValWidth, max(hValWidth, cValWidth))
+        let col1MaxVal = max(xValWidth, max(sxValWidth, max(wValWidth, max(rValWidth, lValWidth))))
+        let col2MaxVal = max(yValWidth, max(syValWidth, max(hValWidth, cValWidth)))
 
         let col1Width = iconSlotWidth + itemGap + col1MaxVal
         let col2Width = iconSlotWidth + itemGap + col2MaxVal
@@ -85,8 +97,10 @@ enum ReadoutBadge {
         let contentWidth = max(gridWidth, headerMinWidth)
 
         var numRows = 1 // Coordinates row
+        if sxValStr != nil { numRows += 1 }
         if wValStr != nil { numRows += 1 }
         if rValStr != nil { numRows += 1 }
+        if lValStr != nil { numRows += 1 }
 
         let gridHeight = CGFloat(numRows) * rowHeight + CGFloat(max(0, numRows - 1)) * rowGap
         let totalWidth = contentWidth + padX * 2
@@ -144,7 +158,12 @@ enum ReadoutBadge {
             let headerY = currentY - 17
 
             // Shape Icon & Title (Vector SF Symbol)
-            let shapeIcon = shapeType == .circle ? "circle" : "rectangle"
+            let shapeIcon: String
+            switch shapeType {
+            case .circle: shapeIcon = "circle"
+            case .rectangle: shapeIcon = "rectangle"
+            case .line: shapeIcon = "line.diagonal"
+            }
             if let sImg = makeVectorSymbol(shapeIcon, pointSize: 11, weight: .medium, color: NSColor.white.withAlphaComponent(0.85)) {
                 drawSymbol(sImg, centeredIn: NSRect(x: badgeRect.minX + padX, y: headerY + 1.5, width: 12, height: 12))
             }
@@ -230,7 +249,9 @@ enum ReadoutBadge {
                     .font: fontLbl,
                     .foregroundColor: labelColor
                 ])
-                lblAttr.draw(at: NSPoint(x: x + 1, y: cellY))
+                let lblSize = lblAttr.size()
+                let lblX = (slotRect.minX + (slotRect.width - lblSize.width) / 2.0).rounded()
+                lblAttr.draw(at: NSPoint(x: lblX, y: cellY))
             }
 
             let isMetricActive = (metric != nil && metric == activeMetric)
@@ -247,6 +268,12 @@ enum ReadoutBadge {
                 let hitRect = NSRect(x: valOrigin.x - 2, y: cellY - 2, width: valWidth + 4, height: rowHeight + 2)
                 metricHits.append(MetricHitTarget(metric: metric, rect: hitRect))
             }
+        }
+
+        // Line Length Row
+        if let l = lValStr {
+            drawCell(metric: .length, symbolName: "ruler", drawCustom: nil, textLabel: nil, value: l, x: col1X, y: currentY)
+            currentY -= (rowHeight + rowGap)
         }
 
         // Dimensions Row (Width, Height)
@@ -269,11 +296,42 @@ enum ReadoutBadge {
             currentY -= (rowHeight + rowGap)
         }
 
-        // Position Row (X, Y)
+        // Ruler Position Row (X, Y)
         drawCell(metric: .x, symbolName: nil, drawCustom: nil, textLabel: "X", value: xValStr, x: col1X, y: currentY)
         drawCell(metric: .y, symbolName: nil, drawCustom: nil, textLabel: "Y", value: yValStr, x: col2X, y: currentY)
 
+        // Screen Position Row (Screen icon followed by X / Y)
+        if let sx = sxValStr, let sy = syValStr {
+            currentY -= (rowHeight + rowGap)
+            drawCell(metric: .screenX, symbolName: nil, drawCustom: { slotRect in
+                ReadoutBadge.drawScreenCoordIcon(axis: "X", in: slotRect, color: labelColor, font: fontLbl)
+            }, textLabel: nil, value: sx, x: col1X, y: currentY)
+            drawCell(metric: .screenY, symbolName: nil, drawCustom: { slotRect in
+                ReadoutBadge.drawScreenCoordIcon(axis: "Y", in: slotRect, color: labelColor, font: fontLbl)
+            }, textLabel: nil, value: sy, x: col2X, y: currentY)
+        }
+
         return ReadoutBadgeLayout(badgeRect: badgeRect, closeRect: outCloseRect, editRect: outEditRect, moveRect: outMoveRect, metricHits: metricHits)
+    }
+
+    /// Draws a screen icon (display) followed by axis text ("X" or "Y") centered within slotRect.
+    static func drawScreenCoordIcon(axis: String, in slotRect: NSRect, color: NSColor, font: NSFont) {
+        if let sym = makeVectorSymbol("display", pointSize: 9.5, weight: .semibold, color: color) {
+            let symSize = sym.size
+            let textAttr = NSAttributedString(string: axis, attributes: [
+                .font: font,
+                .foregroundColor: color
+            ])
+            let textSize = textAttr.size()
+            let gap: CGFloat = 2.0
+            let totalW = symSize.width + gap + textSize.width
+            let startX = (slotRect.minX + (slotRect.width - totalW) / 2.0).rounded()
+            let symY = (slotRect.minY + (slotRect.height - symSize.height) / 2.0).rounded()
+            sym.draw(in: NSRect(x: startX, y: symY, width: symSize.width, height: symSize.height))
+
+            let textY = slotRect.minY - 1.5
+            textAttr.draw(at: NSPoint(x: startX + symSize.width + gap, y: textY))
+        }
     }
 
     /// Creates an unrasterized, resolution-independent vector SF Symbol tinted with palette colors.

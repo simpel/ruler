@@ -91,7 +91,7 @@ final class DrawingCanvasPanel: NSPanel {
         backgroundColor = .clear
         hasShadow = false
         isReleasedWhenClosed = false
-        level = .statusBar
+        level = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 1)
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle, .stationary]
         contentView = DrawingCanvasView()
     }
@@ -109,6 +109,18 @@ final class DrawingCanvasView: NSView {
     private var trackingArea: NSTrackingArea?
 
     override var isOpaque: Bool { false }
+
+    override func draw(_ dirtyRect: NSRect) {
+        // A minute non-zero alpha (0.002) registers in the macOS Quartz WindowServer
+        // backing store, ensuring that mouse clicks and drags are intercepted cleanly
+        // across the screen without leaking into background applications.
+        NSColor(white: 1.0, alpha: 0.002).setFill()
+        dirtyRect.fill()
+    }
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        self
+    }
 
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
@@ -142,8 +154,14 @@ final class DrawingCanvasView: NSView {
         if dist >= dragThreshold {
             isDragging = true
             let constrain = event.modifierFlags.contains(.shift)
-            let end = constrain ? RulerController.constrainSquareOrCircle(anchor: start, current: current) : current
-            RulerController.shared.updateLiveMeasurement(anchor: start, current: end, shapeType: Settings.shared.drawShapeType)
+            let shape = Settings.shared.drawShapeType
+            let end: NSPoint
+            if shape == .line {
+                end = constrain ? RulerController.constrainLine(anchor: start, current: current) : current
+            } else {
+                end = constrain ? RulerController.constrainSquareOrCircle(anchor: start, current: current) : current
+            }
+            RulerController.shared.updateLiveMeasurement(anchor: start, current: end, shapeType: shape)
         }
     }
 
@@ -156,26 +174,32 @@ final class DrawingCanvasView: NSView {
         if wasDragging, let start {
             let current = NSEvent.mouseLocation
             let constrain = event.modifierFlags.contains(.shift)
-            let end = constrain ? RulerController.constrainSquareOrCircle(anchor: start, current: current) : current
+            let shape = Settings.shared.drawShapeType
+            let end: NSPoint
+            if shape == .line {
+                end = constrain ? RulerController.constrainLine(anchor: start, current: current) : current
+            } else {
+                end = constrain ? RulerController.constrainSquareOrCircle(anchor: start, current: current) : current
+            }
             if hypot(end.x - start.x, end.y - start.y) > 6 {
-                MeasurementStore.shared.add(anchor: start, current: end, shapeType: Settings.shared.drawShapeType)
+                MeasurementStore.shared.add(anchor: start, current: end, shapeType: shape)
             }
             RulerController.shared.clearLiveMeasurement()
         } else {
             RulerController.shared.clearLiveMeasurement()
-            if event.modifierFlags.contains(.option), let point = start {
+            if event.modifierFlags.contains(.command), let point = start {
                 let hitGuides = GuideManager.shared.guidesNear(point: point, threshold: 12)
                 if !hitGuides.isEmpty {
                     for g in hitGuides {
                         GuideManager.shared.remove(g)
                     }
                 } else {
-                    // Option-click places cross markers (both horizontal and vertical guides)
+                    // Command-click places cross markers (both horizontal and vertical guides)
                     GuideManager.shared.add(orientation: .horizontal, at: point)
                     GuideManager.shared.add(orientation: .vertical, at: point)
                 }
             } else {
-                // Clicking on the screen without modifiers means "leaving" the app context.
+                // Clicking on the screen without modifiers leaves the drawing mode
                 RulerController.shared.deactivateContext()
             }
         }

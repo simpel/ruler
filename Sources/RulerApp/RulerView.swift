@@ -5,16 +5,16 @@ final class RulerView: NSView {
 
     // MARK: Layout constants
     static let thickness: CGFloat = 34
-    private let cornerRadius: CGFloat = 6
-    private let resizeZone: CGFloat = 16
+    let cornerRadius: CGFloat = 6
+    let resizeZone: CGFloat = 16
 
-    private let minorStep: CGFloat = 10     // in display units
-    private let midStep: CGFloat = 50
-    private let majorStep: CGFloat = 100
+    let minorStep: CGFloat = 10     // in display units
+    let midStep: CGFloat = 50
+    let majorStep: CGFloat = 100
 
-    private let minorLen: CGFloat = 4
-    private let midLen: CGFloat = 8
-    private let majorLen: CGFloat = 13
+    let minorLen: CGFloat = 4
+    let midLen: CGFloat = 8
+    let majorLen: CGFloat = 13
 
     let axis: RulerAxis
 
@@ -32,11 +32,22 @@ final class RulerView: NSView {
         didSet { if oldValue != measureSpan { needsDisplay = true } }
     }
 
-    private enum DragMode { case none, resize, guideOut }
-    private var dragMode: DragMode = .none
-    private var resizeHover = false
+    enum RulerDragMode {
+        case none
+        case resize
+        case moveWindow
+        case slideZero(initialOffset: CGFloat, startMousePos: NSPoint)
+        case guideOut(guide: GuideWindow, initialOffset: CGFloat)
+    }
+
+    private var rulerDragMode: RulerDragMode = .none
+    var isResizing: Bool {
+        if case .resize = rulerDragMode { return true }
+        return false
+    }
+
+    var resizeHover = false
     private var trackingArea: NSTrackingArea?
-    private weak var pendingGuide: GuideWindow?
     private var dragStartMouse: NSPoint = .zero
     private var dragStartFrame: NSRect = .zero
 
@@ -50,21 +61,21 @@ final class RulerView: NSView {
     // MARK: - Geometry helpers
 
     /// Length of the ruler along its measuring axis, in points.
-    private var length: CGFloat {
+    var length: CGFloat {
         axis == .horizontal ? bounds.width : bounds.height
     }
 
     /// Points-per-display-unit: 1 for logical points, 1/scale for device pixels.
-    private var pointsPerUnit: CGFloat {
+    var pointsPerUnit: CGFloat {
         Settings.shared.devicePixels ? 1.0 / (window?.backingScaleFactor ?? 2.0) : 1.0
     }
 
-    private var zeroOffset: CGFloat {
+    var zeroOffset: CGFloat {
         Settings.shared.zeroOffset(for: axis)
     }
 
     /// Converts a distance along the ruler (points from its start) into a view point.
-    private func position(forDistance d: CGFloat) -> CGFloat {
+    func position(forDistance d: CGFloat) -> CGFloat {
         axis == .horizontal ? bounds.minX + d : bounds.maxY - d
     }
 
@@ -73,7 +84,7 @@ final class RulerView: NSView {
         axis == .horizontal ? p.x - bounds.minX : bounds.maxY - p.y
     }
 
-    private func displayValue(atDistance d: CGFloat) -> CGFloat {
+    func displayValue(atDistance d: CGFloat) -> CGFloat {
         (d - zeroOffset) / pointsPerUnit
     }
 
@@ -82,280 +93,12 @@ final class RulerView: NSView {
     override var isOpaque: Bool { false }
 
     override func draw(_ dirtyRect: NSRect) {
-        let ink = isContextActive ? Palette.ink : Palette.inactiveInk
-        let gradient = isContextActive ? Palette.faceGradient : Palette.inactiveFaceGradient
-
-        let shape = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5),
-                                xRadius: cornerRadius, yRadius: cornerRadius)
-
-        NSGraphicsContext.saveGraphicsState()
-        NSGraphicsContext.current?.cgContext.setAlpha(0.96)
-        let shadow = NSShadow()
-        shadow.shadowColor = NSColor.black.withAlphaComponent(0.35)
-        shadow.shadowOffset = NSSize(width: 0, height: -1.5)
-        shadow.shadowBlurRadius = 3
-        shadow.set()
-        gradient.draw(in: shape, angle: -90)
-        NSGraphicsContext.restoreGraphicsState()
-
-        let strokeColor = isContextActive ? ink.withAlphaComponent(0.3) : NSColor(calibratedWhite: 0.35, alpha: 0.3)
-        strokeColor.setStroke()
-        shape.lineWidth = 1
-        shape.stroke()
-
-        NSGraphicsContext.saveGraphicsState()
-        shape.addClip()
-
-        if let span = measureSpan { drawMeasureBand(span) }
-        let grabbing = resizeHover || dragMode == .resize
-        if grabbing { drawResizeHighlight(ink: ink) }
-        drawTicks(ink: ink)
-        drawGrip(ink: ink, highlighted: grabbing)
-        if let d = cursorDistance, d >= 0, d <= length {
-            drawCursor(at: d, accent: isContextActive ? Palette.live : Palette.inactiveLive)
-        }
-
-        NSGraphicsContext.restoreGraphicsState()
-    }
-
-    private func drawTicks(ink: NSColor) {
-        let ppu = pointsPerUnit
-        let vStart = displayValue(atDistance: 0)
-        let vEnd = displayValue(atDistance: length)
-        guard vEnd > vStart else { return }
-
-        let first = (vStart / minorStep).rounded(.down) * minorStep
-        let path = NSBezierPath()
-        path.lineWidth = 1
-
-        var v = first
-        while v <= vEnd + minorStep {
-            let d = zeroOffset + v * ppu
-            if d >= -1, d <= length + 1 {
-                let isMajor = v.truncatingRemainder(dividingBy: majorStep) == 0
-                let isMid = v.truncatingRemainder(dividingBy: midStep) == 0
-                let len = isMajor ? majorLen : (isMid ? midLen : minorLen)
-                let p = (position(forDistance: d)).rounded() + 0.5
-
-                switch axis {
-                case .horizontal:
-                    path.move(to: NSPoint(x: p, y: bounds.minY))
-                    path.line(to: NSPoint(x: p, y: bounds.minY + len))
-                case .vertical:
-                    path.move(to: NSPoint(x: bounds.maxX, y: p))
-                    path.line(to: NSPoint(x: bounds.maxX - len, y: p))
-                }
-
-                if isMajor {
-                    drawLabel(String(Int(v.rounded())), atDistance: d, ink: ink)
-                }
-            }
-            v += minorStep
-        }
-
-        ink.withAlphaComponent(0.75).setStroke()
-        path.stroke()
-    }
-
-    private func labelAttributes(_ ink: NSColor, size: CGFloat) -> [NSAttributedString.Key: Any] {
-        [
-            .font: NSFont.monospacedDigitSystemFont(ofSize: size, weight: .medium),
-            .foregroundColor: ink.withAlphaComponent(0.85),
-        ]
-    }
-
-    private func drawLabel(_ text: String, atDistance d: CGFloat, ink: NSColor) {
-        var string = NSAttributedString(string: text, attributes: labelAttributes(ink, size: 9))
-        // The vertical ruler is narrow: shrink long numbers so they never clip.
-        if axis == .vertical {
-            let room = bounds.width - majorLen - 4
-            if string.size().width > room {
-                string = NSAttributedString(string: text, attributes: labelAttributes(ink, size: 7.5))
-            }
-        }
-        let size = string.size()
-        let p = position(forDistance: d)
-
-        switch axis {
-        case .horizontal:
-            let y = majorLen + (bounds.height - majorLen - size.height) / 2
-            var x = p + 3
-            if x + size.width > bounds.maxX - 2 { x = p - 3 - size.width }
-            string.draw(at: NSPoint(x: x, y: y))
-        case .vertical:
-            let x = max(2, (bounds.width - majorLen - size.width) / 2)
-            var y = p - size.height / 2
-            y = min(max(y, bounds.minY + 1), bounds.maxY - size.height - 1)
-            string.draw(at: NSPoint(x: x, y: y))
-        }
-    }
-
-    private var resizeZoneRect: NSRect {
-        switch axis {
-        case .horizontal:
-            return NSRect(x: bounds.maxX - resizeZone, y: bounds.minY,
-                          width: resizeZone, height: bounds.height)
-        case .vertical:
-            return NSRect(x: bounds.minX, y: bounds.minY,
-                          width: bounds.width, height: resizeZone)
-        }
-    }
-
-    /// Lights up the end of the ruler while the pointer is in the resize zone,
-    /// so it reads as a handle rather than part of the scale.
-    private func drawResizeHighlight(ink: NSColor) {
-        let zone = resizeZoneRect
-        ink.withAlphaComponent(0.20).setFill()
-        zone.fill()
-
-        let edge = NSBezierPath()
-        edge.lineWidth = 1
-        switch axis {
-        case .horizontal:
-            let x = zone.minX.rounded() + 0.5
-            edge.move(to: NSPoint(x: x, y: bounds.minY))
-            edge.line(to: NSPoint(x: x, y: bounds.maxY))
-        case .vertical:
-            let y = zone.maxY.rounded() + 0.5
-            edge.move(to: NSPoint(x: bounds.minX, y: y))
-            edge.line(to: NSPoint(x: bounds.maxX, y: y))
-        }
-        ink.withAlphaComponent(0.35).setStroke()
-        edge.stroke()
-
-        drawResizeArrows(ink: ink, in: zone)
-    }
-
-    /// A double-headed arrow across the handle, matching the resize cursor.
-    private func drawResizeArrows(ink: NSColor, in zone: NSRect) {
-        let path = NSBezierPath()
-        path.lineWidth = 1.2
-        path.lineCapStyle = .round
-        let reach: CGFloat = 4.5
-        let head: CGFloat = 2.6
-        let c = NSPoint(x: zone.midX.rounded(), y: zone.midY.rounded())
-
-        switch axis {
-        case .horizontal:
-            path.move(to: NSPoint(x: c.x - reach, y: c.y))
-            path.line(to: NSPoint(x: c.x + reach, y: c.y))
-            for direction in [CGFloat(-1), 1] {
-                let tip = NSPoint(x: c.x + direction * reach, y: c.y)
-                path.move(to: NSPoint(x: tip.x - direction * head, y: tip.y + head))
-                path.line(to: tip)
-                path.line(to: NSPoint(x: tip.x - direction * head, y: tip.y - head))
-            }
-        case .vertical:
-            path.move(to: NSPoint(x: c.x, y: c.y - reach))
-            path.line(to: NSPoint(x: c.x, y: c.y + reach))
-            for direction in [CGFloat(-1), 1] {
-                let tip = NSPoint(x: c.x, y: c.y + direction * reach)
-                path.move(to: NSPoint(x: tip.x + head, y: tip.y - direction * head))
-                path.line(to: tip)
-                path.line(to: NSPoint(x: tip.x - head, y: tip.y - direction * head))
-            }
-        }
-        ink.withAlphaComponent(0.9).setStroke()
-        path.stroke()
-    }
-
-    /// Grip dots at the far end, hinting that the ruler can be resized there.
-    private func drawGrip(ink: NSColor, highlighted: Bool = false) {
-        if highlighted { return }   // the arrows replace the dots while hovering
-        let color = ink.withAlphaComponent(0.35)
-        color.setFill()
-        let dot: CGFloat = 2
-        for i in 0..<3 {
-            let off = CGFloat(i) * 4
-            let rect: NSRect
-            switch axis {
-            case .horizontal:
-                rect = NSRect(x: bounds.maxX - 6 - off, y: bounds.midY - dot / 2, width: dot, height: dot)
-            case .vertical:
-                rect = NSRect(x: bounds.midX - dot / 2, y: bounds.minY + 4 + off, width: dot, height: dot)
-            }
-            NSBezierPath(ovalIn: rect).fill()
-        }
-    }
-
-    /// Highlights the part of the ruler covered by an in-progress measurement.
-    private func drawMeasureBand(_ span: ClosedRange<CGFloat>) {
-        let a = position(forDistance: span.lowerBound)
-        let b = position(forDistance: span.upperBound)
-        let rect: NSRect
-        switch axis {
-        case .horizontal:
-            rect = NSRect(x: min(a, b), y: bounds.minY, width: abs(b - a), height: bounds.height)
-        case .vertical:
-            rect = NSRect(x: bounds.minX, y: min(a, b), width: bounds.width, height: abs(b - a))
-        }
-        Palette.live.withAlphaComponent(0.22).setFill()
-        rect.fill()
-
-        let edges = NSBezierPath()
-        edges.lineWidth = 1
-        switch axis {
-        case .horizontal:
-            for x in [rect.minX, rect.maxX] {
-                edges.move(to: NSPoint(x: x.rounded() + 0.5, y: bounds.minY))
-                edges.line(to: NSPoint(x: x.rounded() + 0.5, y: bounds.maxY))
-            }
-        case .vertical:
-            for y in [rect.minY, rect.maxY] {
-                edges.move(to: NSPoint(x: bounds.minX, y: y.rounded() + 0.5))
-                edges.line(to: NSPoint(x: bounds.maxX, y: y.rounded() + 0.5))
-            }
-        }
-        Palette.live.withAlphaComponent(0.7).setStroke()
-        edges.stroke()
-    }
-
-    private func drawCursor(at d: CGFloat, accent: NSColor) {
-        let p = (position(forDistance: d)).rounded() + 0.5
-        let line = NSBezierPath()
-        line.lineWidth = 1
-        switch axis {
-        case .horizontal:
-            line.move(to: NSPoint(x: p, y: bounds.minY))
-            line.line(to: NSPoint(x: p, y: bounds.maxY))
-        case .vertical:
-            line.move(to: NSPoint(x: bounds.minX, y: p))
-            line.line(to: NSPoint(x: bounds.maxX, y: p))
-        }
-        accent.setStroke()
-        line.stroke()
-
-        // Readout badge
-        let value = Int(displayValue(atDistance: d).rounded())
-        let string = NSAttributedString(string: "\(value)", attributes: [
-            .font: NSFont.monospacedDigitSystemFont(ofSize: 9, weight: .semibold),
-            .foregroundColor: isContextActive ? NSColor.white : NSColor(calibratedWhite: 0.90, alpha: 1.0),
-        ])
-        let size = string.size()
-        let padX: CGFloat = 4, padY: CGFloat = 1.5
-        var badge = NSRect(x: 0, y: 0, width: size.width + padX * 2, height: size.height + padY * 2)
-
-        switch axis {
-        case .horizontal:
-            badge.origin.y = bounds.maxY - badge.height - 2
-            badge.origin.x = p + 3
-            if badge.maxX > bounds.maxX - 2 { badge.origin.x = p - 3 - badge.width }
-        case .vertical:
-            badge.origin.x = bounds.minX + 2
-            badge.origin.y = p + 3
-            if badge.maxY > bounds.maxY - 2 { badge.origin.y = p - 3 - badge.height }
-        }
-        badge.origin.x = min(max(badge.origin.x, bounds.minX + 2), bounds.maxX - badge.width - 2)
-        badge.origin.y = min(max(badge.origin.y, bounds.minY + 2), bounds.maxY - badge.height - 2)
-
-        accent.setFill()
-        NSBezierPath(roundedRect: badge, xRadius: 3, yRadius: 3).fill()
-        string.draw(at: NSPoint(x: badge.minX + padX, y: badge.minY + padY))
+        drawFace(in: dirtyRect)
     }
 
     // MARK: - Interaction
 
-    private func isInResizeZone(_ p: NSPoint) -> Bool {
+    func isInResizeZone(_ p: NSPoint) -> Bool {
         switch axis {
         case .horizontal: return p.x > bounds.maxX - resizeZone
         case .vertical: return p.y < bounds.minY + resizeZone
@@ -384,7 +127,7 @@ final class RulerView: NSView {
         setHover(nil)
     }
 
-    private func setHover(_ point: NSPoint?) {
+    func setHover(_ point: NSPoint?) {
         let hovering = point.map(isInResizeZone) ?? false
         if hovering != resizeHover {
             resizeHover = hovering
@@ -411,65 +154,112 @@ final class RulerView: NSView {
         RulerController.shared.activateContext()
         let p = convert(event.locationInWindow, from: nil)
 
+        // 1. Command-click on ruler toggles a guide directly at this coordinate
         if event.modifierFlags.contains(.command) {
-            // Command-click sets the zero mark where you clicked.
-            Settings.shared.setZeroOffset(distance(forViewPoint: p), for: axis)
+            let nearbyGuides = GuideManager.shared.guidesNear(point: NSEvent.mouseLocation, threshold: max(16, RulerView.thickness / 2))
+            let guidesOnThisRuler = GuideManager.shared.guides.filter { guide in
+                guard guide.orientation == axis else { return false }
+                guard guide.windowNumber != window.windowNumber else { return false }
+                return guide.frame.intersects(window.frame.insetBy(dx: -4, dy: -4))
+            }
+
+            let guidesToRemove = Set(nearbyGuides).union(guidesOnThisRuler)
+            if !guidesToRemove.isEmpty {
+                for g in guidesToRemove {
+                    GuideManager.shared.remove(g)
+                }
+            } else {
+                GuideManager.shared.add(orientation: axis, at: NSEvent.mouseLocation)
+            }
+            GuideManager.shared.save()
+            rulerDragMode = .none
             needsDisplay = true
             return
         }
 
-        if event.clickCount == 2 {
-            // Double-click also sets the zero mark where you clicked.
-            Settings.shared.setZeroOffset(distance(forViewPoint: p), for: axis)
-            needsDisplay = true
+        // 2. Shift-drag repositions the ruler window
+        if event.modifierFlags.contains(.shift) {
+            rulerDragMode = .moveWindow
+            window.performDrag(with: event)
             return
         }
 
-        if event.modifierFlags.contains(.option) {
-            // Pull a fixed guide out of the ruler, Photoshop style: the guide
-            // runs parallel to the ruler it came from.
-            dragMode = .guideOut
-            pendingGuide = GuideManager.shared.add(orientation: axis, at: NSEvent.mouseLocation)
-            return
-        }
-
+        // 3. Click in resize zone resizes the ruler length
         if isInResizeZone(p) {
-            dragMode = .resize
+            rulerDragMode = .resize
             dragStartMouse = NSEvent.mouseLocation
             dragStartFrame = window.frame
-        } else {
-            dragMode = .none
-            window.performDrag(with: event)
+            return
         }
+
+        // 4. Normal drag start: records position to slide zero or drag out a guide
+        let initialOffset = Settings.shared.zeroOffset(for: axis)
+        rulerDragMode = .slideZero(initialOffset: initialOffset, startMousePos: NSEvent.mouseLocation)
     }
 
     override func mouseDragged(with event: NSEvent) {
-        if dragMode == .guideOut {
-            pendingGuide?.move(to: NSEvent.mouseLocation)
-            return
-        }
-        guard dragMode == .resize, let window else { return }
         let now = NSEvent.mouseLocation
-        let minLength: CGFloat = 120
 
-        switch axis {
-        case .horizontal:
-            let w = max(minLength, dragStartFrame.width + (now.x - dragStartMouse.x))
-            window.setFrame(NSRect(x: dragStartFrame.minX, y: dragStartFrame.minY,
-                                   width: w, height: dragStartFrame.height), display: true)
-        case .vertical:
-            let h = max(minLength, dragStartFrame.height - (now.y - dragStartMouse.y))
-            window.setFrame(NSRect(x: dragStartFrame.minX, y: dragStartFrame.maxY - h,
-                                   width: dragStartFrame.width, height: h), display: true)
+        switch rulerDragMode {
+        case .none, .moveWindow:
+            break
+
+        case .guideOut(let guide, _):
+            guide.move(to: now)
+
+        case .resize:
+            guard let window else { return }
+            let minLength: CGFloat = 120
+            switch axis {
+            case .horizontal:
+                let w = max(minLength, dragStartFrame.width + (now.x - dragStartMouse.x))
+                window.setFrame(NSRect(x: dragStartFrame.minX, y: dragStartFrame.minY,
+                                       width: w, height: dragStartFrame.height), display: true)
+            case .vertical:
+                let h = max(minLength, dragStartFrame.height - (now.y - dragStartMouse.y))
+                window.setFrame(NSRect(x: dragStartFrame.minX, y: dragStartFrame.maxY - h,
+                                       width: dragStartFrame.width, height: h), display: true)
+            }
+
+        case .slideZero(let initialOffset, let startMousePos):
+            let localPoint = convert(event.locationInWindow, from: nil)
+            let outThreshold: CGFloat = 4.0
+            let isDraggedOut: Bool
+            switch axis {
+            case .horizontal:
+                isDraggedOut = localPoint.y < -outThreshold || localPoint.y > bounds.height + outThreshold
+            case .vertical:
+                isDraggedOut = localPoint.x < -outThreshold || localPoint.x > bounds.width + outThreshold
+            }
+
+            if isDraggedOut {
+                // Dragged out perpendicular to the ruler: create and pull out a guide!
+                Settings.shared.setZeroOffset(initialOffset, for: axis)
+                needsDisplay = true
+
+                let guide = GuideManager.shared.add(orientation: axis, at: now)
+                rulerDragMode = .guideOut(guide: guide, initialOffset: initialOffset)
+            } else {
+                // Dragging along the ruler axis: move the zero position for this ruler
+                switch axis {
+                case .horizontal:
+                    let delta = now.x - startMousePos.x
+                    Settings.shared.setZeroOffset(initialOffset + delta, for: axis)
+                case .vertical:
+                    let delta = startMousePos.y - now.y
+                    Settings.shared.setZeroOffset(initialOffset + delta, for: axis)
+                }
+                needsDisplay = true
+            }
         }
     }
 
     override func mouseUp(with event: NSEvent) {
         setHover(convert(event.locationInWindow, from: nil))
-        if dragMode == .guideOut {
+        if case .guideOut = rulerDragMode {
             GuideManager.shared.save()
-            pendingGuide = nil
         }
-        dragMode = .none
+        rulerDragMode = .none
+        needsDisplay = true
     }
 }

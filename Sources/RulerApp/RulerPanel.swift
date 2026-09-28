@@ -36,6 +36,20 @@ final class RulerPanel: NSPanel, NSWindowDelegate {
     override var canBecomeKey: Bool { false }
     override var canBecomeMain: Bool { false }
 
+    override func setFrame(_ frameRect: NSRect, display flag: Bool) {
+        let snapped = NSRect(
+            x: frameRect.origin.x.rounded(),
+            y: frameRect.origin.y.rounded(),
+            width: frameRect.size.width.rounded(),
+            height: frameRect.size.height.rounded()
+        )
+        super.setFrame(snapped, display: flag)
+    }
+
+    override func setFrameOrigin(_ newOrigin: NSPoint) {
+        super.setFrameOrigin(NSPoint(x: newOrigin.x.rounded(), y: newOrigin.y.rounded()))
+    }
+
     private func fits(_ frame: NSRect) -> Bool {
         NSScreen.screens.contains { $0.frame.intersects(frame) }
     }
@@ -73,12 +87,20 @@ final class RulerPanel: NSPanel, NSWindowDelegate {
     func windowDidMove(_ notification: Notification) {
         Settings.shared.setSavedFrame(frame, for: axis)
         GuideManager.shared.refreshLabels()
+        MeasurementStore.shared.applySettings()
     }
 
     func windowDidResize(_ notification: Notification) {
         Settings.shared.setSavedFrame(frame, for: axis)
         GuideManager.shared.refreshLabels()
+        MeasurementStore.shared.applySettings()
         invalidateCursorRects(for: rulerView)
         rulerView.needsDisplay = true
+        invalidateShadow()
+    }
+
+    func windowDidChangeBackingProperties(_ notification: Notification) {
+        rulerView.needsDisplay = true
+        invalidateShadow()
     }
 }

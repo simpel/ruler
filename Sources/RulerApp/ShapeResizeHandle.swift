@@ -22,7 +22,7 @@ enum ShapeResizeHandle {
     /// Calculates the control dots for the given shape.
     static func dots(shapeType: ShapeType, anchor: NSPoint, current: NSPoint, box: NSRect) -> [ResizeDot] {
         switch shapeType {
-        case .rectangle:
+        case .rectangle, .line:
             return [
                 makeDot(kind: .anchor, point: anchor),
                 makeDot(kind: .current, point: current)

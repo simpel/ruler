@@ -135,6 +135,7 @@ final class Settings {
 
     func setZeroOffset(_ value: CGFloat, for axis: RulerAxis) {
         defaults.set(Double(value), forKey: Key.zero + axisKey(axis))
+        changed()
     }
 
     private func axisKey(_ axis: RulerAxis) -> String {

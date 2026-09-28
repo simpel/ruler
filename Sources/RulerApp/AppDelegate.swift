@@ -14,6 +14,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var itemLaunchAtLogin: NSMenuItem!
     private var itemDrawRect: NSMenuItem!
     private var itemDrawCircle: NSMenuItem!
+    private var itemDrawLine: NSMenuItem!
     private var opacityItems: [NSMenuItem] = []
     private var keyMonitor: Any?
 
@@ -99,6 +100,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let shapes = NSMenu()
         itemDrawRect = add(to: shapes, "Draw Rectangles", #selector(setDrawRectangle), key: "4")
         itemDrawCircle = add(to: shapes, "Draw Circles", #selector(setDrawCircle), key: "5")
+        itemDrawLine = add(to: shapes, "Draw Lines", #selector(setDrawLine), key: "6")
         shapes.addItem(.separator())
         _ = add(to: shapes, "Clear All Shapes", #selector(clearMeasurements))
         let shapesItem = NSMenuItem(title: "Shapes", action: nil, keyEquivalent: "")
@@ -149,6 +151,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         itemLaunchAtLogin.state = SMAppService.mainApp.status == .enabled ? .on : .off
         itemDrawRect.state = s.drawShapeType == .rectangle ? .on : .off
         itemDrawCircle.state = s.drawShapeType == .circle ? .on : .off
+        itemDrawLine.state = s.drawShapeType == .line ? .on : .off
         for item in opacityItems {
             let value = (item.representedObject as? NSNumber)?.doubleValue ?? 1
             item.state = abs(value - s.opacity) < 0.001 ? .on : .off
@@ -167,6 +170,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
     @objc private func setDrawCircle() {
         Settings.shared.drawShapeType = .circle
+        controller.activateContext()
+    }
+    @objc private func setDrawLine() {
+        Settings.shared.drawShapeType = .line
         controller.activateContext()
     }
 

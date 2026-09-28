@@ -19,7 +19,6 @@ final class RulerController {
     private var lastMouse: NSPoint = .zero
 
     private(set) var isContextActive: Bool = false
-    private var lastFocusState: Bool = false
 
     var isAppInFocus: Bool {
         isContextActive || NSApp.isActive
@@ -28,7 +27,6 @@ final class RulerController {
     var panels: [RulerPanel] { [horizontal, vertical] }
 
     func activateContext() {
-        guard !isContextActive else { return }
         isContextActive = true
         for panel in panels {
             panel.rulerView.isContextActive = true
@@ -86,9 +84,6 @@ final class RulerController {
     }
 
     @objc private func applicationStateChanged() {
-        if !NSApp.isActive {
-            deactivateContext()
-        }
         updateCrosshairOpacity()
     }
 
@@ -112,14 +107,12 @@ final class RulerController {
         MeasurementStore.shared.applySettings()
     }
 
-    /// When crosshairs are enabled, lines render at 100% of user opacity while in focus
-    /// and dim to 50% opacity when the app is not in focus.
+    /// Renders crosshair lines at 100% of user opacity at all times for maximum sharpness and clarity.
     func updateCrosshairOpacity() {
         let s = Settings.shared
         let baseOpacity = CGFloat(s.opacity)
-        let alpha = isAppInFocus ? baseOpacity : (baseOpacity * 0.5)
         for hair in [crosshairH, crosshairV] {
-            hair.setLineOpacity(alpha)
+            hair.setLineOpacity(baseOpacity)
             if !s.crosshairEnabled { hair.orderOut(nil) }
         }
     }
@@ -160,6 +153,28 @@ final class RulerController {
         NSScreen.screens.first { $0.frame.contains(point) } ?? NSScreen.main ?? NSScreen.screens[0]
     }
 
+    /// Global screen coordinates corresponding to the zero point (0, 0) of the rulers.
+    func globalZeroOrigin(on screen: NSScreen? = nil) -> NSPoint {
+        let scr = screen ?? NSScreen.main ?? NSScreen.screens.first
+        let scrFrame = scr?.frame ?? .zero
+
+        let zeroX: CGFloat
+        if horizontal.isVisible {
+            zeroX = horizontal.frame.minX + Settings.shared.zeroOffset(for: .horizontal)
+        } else {
+            zeroX = scrFrame.minX + Settings.shared.zeroOffset(for: .horizontal)
+        }
+
+        let zeroY: CGFloat
+        if vertical.isVisible {
+            zeroY = vertical.frame.maxY - Settings.shared.zeroOffset(for: .vertical)
+        } else {
+            zeroY = scrFrame.maxY - Settings.shared.zeroOffset(for: .vertical)
+        }
+
+        return NSPoint(x: zeroX, y: zeroY)
+    }
+
     /// Number shown on a guide: measured on the ruler that reads that axis,
     /// falling back to screen coordinates when that ruler is hidden.
     private func label(for guide: GuideWindow) -> String? {
@@ -186,12 +201,6 @@ final class RulerController {
 
     private func tick() {
         let mouse = NSEvent.mouseLocation
-        let focus = isAppInFocus
-
-        if focus != lastFocusState {
-            lastFocusState = focus
-            updateCrosshairOpacity()
-        }
 
         let idle = mouse == lastMouse
         defer {
@@ -229,6 +238,17 @@ final class RulerController {
         let signX: CGFloat = dx >= 0 ? 1 : -1
         let signY: CGFloat = dy >= 0 ? 1 : -1
         return NSPoint(x: anchor.x + signX * side, y: anchor.y + signY * side)
+    }
+
+    static func constrainLine(anchor: NSPoint, current: NSPoint) -> NSPoint {
+        let dx = current.x - anchor.x
+        let dy = current.y - anchor.y
+        let angle = atan2(dy, dx)
+        let step = CGFloat.pi / 4.0
+        let snappedAngle = (angle / step).rounded() * step
+        let len = hypot(dx, dy)
+        return NSPoint(x: (anchor.x + len * cos(snappedAngle)).rounded(),
+                       y: (anchor.y + len * sin(snappedAngle)).rounded())
     }
 
     func updateLiveMeasurement(anchor: NSPoint, current: NSPoint, shapeType: ShapeType) {

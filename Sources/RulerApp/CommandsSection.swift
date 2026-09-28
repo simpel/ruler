@@ -8,6 +8,7 @@ final class CommandsSection: NSView {
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
+        appearance = NSAppearance(named: .darkAqua)
         setupUI()
     }
 
@@ -23,7 +24,7 @@ final class CommandsSection: NSView {
     private func makeSubgroupLabel(_ text: String) -> NSTextField {
         let label = NSTextField(labelWithString: text)
         label.font = NSFont.systemFont(ofSize: 10, weight: .bold)
-        label.textColor = NSColor(calibratedWhite: 0.55, alpha: 1.0)
+        label.textColor = NSColor(calibratedWhite: 0.68, alpha: 1.0)
         return label
     }
 
@@ -43,7 +44,7 @@ final class CommandsSection: NSView {
 
         let descLabel = NSTextField(labelWithString: description)
         descLabel.font = NSFont.systemFont(ofSize: 11, weight: .regular)
-        descLabel.textColor = NSColor(calibratedWhite: 0.70, alpha: 1.0)
+        descLabel.textColor = NSColor(calibratedWhite: 0.80, alpha: 1.0)
         descLabel.lineBreakMode = .byTruncatingTail
 
         row.addArrangedSubview(gestureLabel)
@@ -76,7 +77,7 @@ final class CommandsSection: NSView {
         stack.setCustomSpacing(3, after: shapesGroup)
 
         let shapesCommands: [(String, String)] = [
-            ("Drag", "Draw shape (hold ⇧ for 1:1)"),
+            ("Drag", "Draw shape or line (hold ⇧ for 1:1/axis)"),
         ]
         for (gesture, desc) in shapesCommands {
             stack.addArrangedSubview(makeRow(gesture: gesture, description: desc))
@@ -92,8 +93,8 @@ final class CommandsSection: NSView {
         stack.setCustomSpacing(3, after: guidesGroup)
 
         let guidesCommands: [(String, String)] = [
-            ("⌥ Drag", "Pull out guide from ruler"),
-            ("⌥ Click", "Toggle cross marker or guide"),
+            ("Drag Out", "Drag out from ruler to place guide"),
+            ("⌘ Click", "Toggle guide on ruler / cross marker"),
         ]
         for (gesture, desc) in guidesCommands {
             stack.addArrangedSubview(makeRow(gesture: gesture, description: desc))
@@ -109,8 +110,9 @@ final class CommandsSection: NSView {
         stack.setCustomSpacing(3, after: rulersGroup)
 
         let rulersCommands: [(String, String)] = [
-            ("Drag", "Move ruler (drag end to resize)"),
-            ("⌘ Click", "Set zero mark on ruler"),
+            ("Drag", "Slide zero mark (drag end to resize)"),
+            ("⇧ Drag", "Reposition ruler window"),
+            ("Right Click", "Set / reset zero & ruler menu"),
         ]
         for (gesture, desc) in rulersCommands {
             stack.addArrangedSubview(makeRow(gesture: gesture, description: desc))

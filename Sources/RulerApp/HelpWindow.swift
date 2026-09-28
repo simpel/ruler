@@ -60,19 +60,20 @@ final class HelpWindowController {
 
         out.append(heading("The rulers"))
         out.append(items([
-            ("Drag a ruler", "move it anywhere on screen"),
+            ("Drag along ruler", "slide its zero position along that ruler axis"),
+            ("⇧-drag a ruler", "reposition the ruler window anywhere on screen"),
             ("Drag the far end", "change its length — the end with the grip dots"),
-            ("⌘-click a ruler", "set its zero mark at that spot (or double-click)"),
+            ("⌘-click a ruler", "place a guide directly at that spot"),
             ("Right-click a ruler", "set or reset zero, add a cross guide, open settings, hide the ruler, or quit"),
             ("Move the pointer", "a red line and a pixel readout follow it on both rulers"),
         ]))
 
         out.append(heading("Shapes & Measuring"))
-        out.append(body("Click either ruler or open Distanser Controls to enter active drawing mode. The rulers turn from neutral charcoal to blueprint blue. Drag anywhere on screen to draw the selected shape without interfering with apps underneath. Hold Shift to constrain to a 1:1 ratio (perfect square or circle). Clicking anywhere on the screen exits drawing mode and returns rulers to neutral.\n"))
+        out.append(body("Click either ruler or open Distanser Controls to enter active drawing mode. The rulers turn from neutral charcoal to blueprint blue. Drag anywhere on screen to draw shapes or straight lines without interfering with apps underneath. Hold Shift to constrain to a 1:1 ratio (perfect square/circle) or snap lines to 45° angles. Clicking anywhere on the screen exits drawing mode and returns rulers to neutral.\n"))
         out.append(items([
             ("Activate mode", "click either ruler or Distanser Controls to enter active drawing mode"),
-            ("Shape modes", "switch between Rectangle (⌘4) and Circle (⌘5) in the Shapes menu or Controls"),
-            ("1:1 ratio lock", "hold Shift while dragging to constrain to a perfect square or circle"),
+            ("Shape modes", "switch between Rectangle (⌘4), Circle (⌘5), and Line (⌘6) in the Shapes menu or Controls"),
+            ("1:1 / Angle lock", "hold Shift while dragging to constrain 1:1 or snap lines to 45° increments"),
             ("Exit mode", "click anywhere on the screen (or press Esc) to leave active mode; rulers return to neutral"),
             ("Move shapes", "drag the center symbol, readout badge, or outline to move the shape anywhere on screen"),
             ("Set values", "double-click a shape or click the sliders icon on its tooltip to open settings"),
@@ -85,12 +86,12 @@ final class HelpWindowController {
         out.append(heading("Marklines and guides"))
         out.append(items([
             ("Crosshair", "two screen-wide hairlines follow the pointer — toggle with Crosshair Follows Pointer"),
-            ("⌥-click on screen", "place both horizontal and vertical cross markers at that position"),
-            ("⌥-drag off a ruler", "pull out a fixed amber guide, running parallel to that ruler"),
+            ("⌘-click on screen", "toggle horizontal and vertical cross markers at that position"),
+            ("Drag off a ruler", "drag out perpendicular from either ruler to place a guide where you release"),
             ("Right-click a ruler", "Add Cross Guide Here — a guide crossing it at the clicked value"),
             ("Drag a guide", "move it; its badge sits at the screen edge and shows its position on the matching ruler"),
             ("Hover or drag a guide", "shows its distance to every other guide, one dimension row per pair along the screen edge"),
-            ("Double-click a guide", "remove it — or right-click it for remove / clear all"),
+            ("Double-click a guide", "remove it — ⌘-click also removes it, or right-click for remove / clear all"),
             ("Guides menu", "add a guide at the pointer, or clear every guide"),
         ]))
         out.append(body("Guides are remembered between launches.\n"))

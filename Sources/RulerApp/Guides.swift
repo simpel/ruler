@@ -166,7 +166,7 @@ final class GuideView: NSView {
 
     override func mouseDown(with event: NSEvent) {
         guard let owner else { return }
-        if event.modifierFlags.contains(.option) {
+        if event.modifierFlags.contains(.command) || event.modifierFlags.contains(.option) {
             let hitGuides = GuideManager.shared.guidesNear(point: NSEvent.mouseLocation, threshold: 12)
             if hitGuides.isEmpty {
                 GuideManager.shared.remove(owner)
@@ -183,7 +183,7 @@ final class GuideView: NSView {
     }
 
     override func mouseDragged(with event: NSEvent) {
-        guard !event.modifierFlags.contains(.option), let owner else { return }
+        guard !event.modifierFlags.contains(.command), !event.modifierFlags.contains(.option), let owner else { return }
         owner.move(to: NSEvent.mouseLocation)
         GuideManager.shared.hover(owner)
     }
